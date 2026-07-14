@@ -95,7 +95,16 @@ impl ClipboardMonitor {
                         }
                     }
 
-                    #[cfg(not(target_os = "macos"))]
+                    #[cfg(target_os = "windows")]
+                    {
+                        if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                            let _ = enigo.key(Key::Control, Press);
+                            let _ = enigo.key(Key::V, Click);
+                            let _ = enigo.key(Key::Control, Release);
+                        }
+                    }
+
+                    #[cfg(all(unix, not(target_os = "macos")))]
                     {
                         if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
                             let _ = enigo.key(Key::Control, Press);
