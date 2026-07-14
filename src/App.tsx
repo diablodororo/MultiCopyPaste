@@ -6,7 +6,8 @@ import {
   RotateCcw,
   Trash2,
   Keyboard,
-  ClipboardList
+  ClipboardList,
+  GripVertical
 } from 'lucide-react';
 import { type Language, translations } from './locales';
 
@@ -41,6 +42,9 @@ export default function App() {
     shortcut: 'Ctrl+Option+V / Ctrl+Alt+V',
     is_enabled: true
   });
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleLanguageChange = (newLang: Language) => {
     setLang(newLang);
@@ -99,6 +103,24 @@ export default function App() {
   const handleManualPaste = async () => {
     try {
       await invoke('manual_paste_next');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSetIndex = async (index: number) => {
+    try {
+      const res = await invoke<SequenceState>('set_sequence_index', { index });
+      setState(res);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleReorder = async (newItems: ClipboardItem[]) => {
+    try {
+      const res = await invoke<SequenceState>('update_sequence_items', { items: newItems });
+      setState(res);
     } catch (e) {
       console.error(e);
     }
@@ -190,6 +212,12 @@ export default function App() {
         </div>
       </section>
 
+      {state.items.length > 0 && (
+        <div className="drag-hint">
+          {t.dragHint}
+        </div>
+      )}
+
       {/* Items List */}
       <section className="queue-list">
         {state.items.length === 0 ? (
@@ -201,14 +229,52 @@ export default function App() {
         ) : (
           state.items.map((item, index) => {
             const isActive = index === state.current_index;
+            const isDragging = draggedIndex === index;
+            const isDragOver = dragOverIndex === index && draggedIndex !== index;
+
             return (
               <div
                 key={item.id}
-                className={`queue-item ${isActive ? 'active' : ''}`}
-                onClick={isActive ? handleManualPaste : undefined}
-                style={{ cursor: isActive ? 'pointer' : 'default' }}
+                draggable={true}
+                onDragStart={(e) => {
+                  setDraggedIndex(index);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOverIndex !== index) {
+                    setDragOverIndex(index);
+                  }
+                }}
+                onDragEnd={() => {
+                  setDraggedIndex(null);
+                  setDragOverIndex(null);
+                }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  if (draggedIndex === null || draggedIndex === index) return;
+                  const newItems = [...state.items];
+                  const [movedItem] = newItems.splice(draggedIndex, 1);
+                  newItems.splice(index, 0, movedItem);
+                  setDraggedIndex(null);
+                  setDragOverIndex(null);
+                  await handleReorder(newItems);
+                }}
+                className={`queue-item ${isActive ? 'active' : ''} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
+                onClick={() => {
+                  if (draggedIndex !== null) return;
+                  if (isActive) {
+                    handleManualPaste();
+                  } else {
+                    handleSetIndex(index);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
               >
                 <div className="item-left">
+                  <span className="drag-handle" title="拖曳調整順序 / Drag to reorder">
+                    <GripVertical size={16} />
+                  </span>
                   <span className="index-pill">{index + 1}</span>
                   <span className="item-content">{item.content}</span>
                 </div>

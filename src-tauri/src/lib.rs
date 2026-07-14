@@ -28,6 +28,11 @@ fn reset_sequence_index(state: State<'_, AppState>) -> SequenceState {
 }
 
 #[tauri::command]
+fn set_sequence_index(index: usize, state: State<'_, AppState>) -> SequenceState {
+    state.set_sequence_index(index)
+}
+
+#[tauri::command]
 fn update_sequence_items(items: Vec<ClipboardItem>, state: State<'_, AppState>) -> SequenceState {
     state.set_items(items)
 }
@@ -58,6 +63,7 @@ pub fn run() {
             get_sequence_state,
             set_target_length,
             reset_sequence_index,
+            set_sequence_index,
             update_sequence_items,
             clear_sequence,
             manual_paste_next

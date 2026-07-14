@@ -1,7 +1,7 @@
 export const zh = {
   appTitle: 'MultiCopyPaste 序列循環剪貼簿',
   appSubtitle: '跨視窗連環複製、依序貼上小工具',
-  appVersion: 'v0.0.5',
+  appVersion: 'v0.0.6',
   statusListening: '後台監聽中',
   sequenceLengthTitle: '序列循環長度 (N)',
   sequenceLengthDesc: '自動擷取最近連續複製的 N 筆項目進行循環',
@@ -9,6 +9,7 @@ export const zh = {
   shortcutDesc: '在任意應用程式中按下即可依序貼上',
   shortcutBadge: 'Ctrl + Option + V / Ctrl + Alt + V',
   queueTitle: '目前貼上佇列',
+  dragHint: '💡 拖曳卡片可自由調整貼上順序，點擊卡片可立即指定為下一個貼上',
   resetTop: '重置回頂部',
   clearAll: '清空',
   emptyTitle: '佇列目前為空',

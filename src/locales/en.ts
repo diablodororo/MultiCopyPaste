@@ -1,7 +1,7 @@
 export const en = {
   appTitle: 'MultiCopyPaste',
   appSubtitle: 'Sequential Multi-Copy & Paste Tool',
-  appVersion: 'v0.0.5',
+  appVersion: 'v0.0.6',
   statusListening: 'Listening in Background',
   sequenceLengthTitle: 'Sequence Cycle Length (N)',
   sequenceLengthDesc: 'Automatically captures the last N copied items for cycling',
@@ -9,6 +9,7 @@ export const en = {
   shortcutDesc: 'Press in any application to paste sequentially',
   shortcutBadge: 'Ctrl + Option + V / Ctrl + Alt + V',
   queueTitle: 'Current Paste Queue',
+  dragHint: '💡 Drag cards to reorder paste sequence, click any card to set as next',
   resetTop: 'Reset to Top',
   clearAll: 'Clear All',
   emptyTitle: 'Queue is Currently Empty',

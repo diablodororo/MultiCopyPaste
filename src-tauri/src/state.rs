@@ -82,6 +82,16 @@ impl AppState {
         state.current_index = 0;
     }
 
+    pub fn set_sequence_index(&self, index: usize) -> SequenceState {
+        let mut state = self.inner.lock();
+        if !state.items.is_empty() {
+            state.current_index = index % state.items.len();
+        } else {
+            state.current_index = 0;
+        }
+        state.clone()
+    }
+
     pub fn set_target_length(&self, length: usize) -> SequenceState {
         let mut state = self.inner.lock();
         state.target_length = length.max(1);
@@ -100,8 +110,31 @@ impl AppState {
 
     pub fn set_items(&self, items: Vec<ClipboardItem>) -> SequenceState {
         let mut state = self.inner.lock();
-        state.items = items;
-        state.current_index = 0;
+        let old_active_id = state.items.get(state.current_index).map(|i| i.id.clone());
+        let items_len = items.len();
+        state.items = items.clone();
+
+        // Synchronize history tail with the reordered items so subsequent copy events preserve order
+        let history_len = state.history.len();
+        if history_len >= items_len && items_len > 0 {
+            let start_idx = history_len - items_len;
+            for (i, item) in items.into_iter().enumerate() {
+                state.history[start_idx + i] = item;
+            }
+        } else {
+            state.history = state.items.clone();
+        }
+
+        if let Some(id) = old_active_id {
+            if let Some(pos) = state.items.iter().position(|i| i.id == id) {
+                state.current_index = pos;
+            } else {
+                state.current_index = 0;
+            }
+        } else {
+            state.current_index = 0;
+        }
+
         state.clone()
     }
 
