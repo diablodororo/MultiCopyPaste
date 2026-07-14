@@ -45,6 +45,9 @@ export default function App() {
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dragCoords, setDragCoords] = useState<{ x: number; y: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [draggedWidth, setDraggedWidth] = useState<number>(300);
   const draggedIndexRef = useRef<number | null>(null);
   const lastDragEndTimeRef = useRef<number>(0);
 
@@ -121,10 +124,12 @@ export default function App() {
 
   const handleReorder = async (newItems: ClipboardItem[]) => {
     try {
+      invoke('log_debug', { msg: `handleReorder called with ${newItems.length} items: ${newItems.map(i => i.content).join(' -> ')}` });
       const res = await invoke<SequenceState>('update_sequence_items', { items: newItems });
       setState(res);
     } catch (e) {
       console.error(e);
+      invoke('log_debug', { msg: `handleReorder error: ${e}` });
     }
   };
 
@@ -237,54 +242,7 @@ export default function App() {
             return (
               <div
                 key={item.id}
-                draggable={true}
-                onDragStart={(e) => {
-                  draggedIndexRef.current = index;
-                  setDraggedIndex(index);
-                  e.dataTransfer.effectAllowed = 'move';
-                  e.dataTransfer.setData('text/plain', index.toString());
-                }}
-                onDragEnter={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                  if (dragOverIndex !== index) {
-                    setDragOverIndex(index);
-                  }
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                  if (dragOverIndex !== index) {
-                    setDragOverIndex(index);
-                  }
-                }}
-                onDragEnd={() => {
-                  lastDragEndTimeRef.current = Date.now();
-                  setDraggedIndex(null);
-                  setDragOverIndex(null);
-                  setTimeout(() => {
-                    draggedIndexRef.current = null;
-                  }, 50);
-                }}
-                onDrop={async (e) => {
-                  e.preventDefault();
-                  lastDragEndTimeRef.current = Date.now();
-                  const dataStr = e.dataTransfer.getData('text/plain');
-                  const fromIdx = (dataStr && !isNaN(parseInt(dataStr, 10)))
-                    ? parseInt(dataStr, 10)
-                    : draggedIndexRef.current;
-                  draggedIndexRef.current = null;
-                  setDraggedIndex(null);
-                  setDragOverIndex(null);
-
-                  if (fromIdx === null || fromIdx === undefined || isNaN(fromIdx) || fromIdx === index) return;
-                  const newItems = [...state.items];
-                  const [movedItem] = newItems.splice(fromIdx, 1);
-                  newItems.splice(index, 0, movedItem);
-
-                  setState((prev) => ({ ...prev, items: newItems }));
-                  await handleReorder(newItems);
-                }}
+                data-index={index}
                 className={`queue-item ${isActive ? 'active' : ''} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
                 onClick={(e) => {
                   if (draggedIndexRef.current !== null || Date.now() - lastDragEndTimeRef.current < 300) {
@@ -301,7 +259,78 @@ export default function App() {
                 style={{ cursor: 'pointer' }}
               >
                 <div className="item-left">
-                  <span className="drag-handle" title="拖曳調整順序 / Drag to reorder">
+                  <span
+                    className="drag-handle"
+                    title="拖曳調整順序 / Drag to reorder"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      draggedIndexRef.current = index;
+                      setDraggedIndex(index);
+
+                      const cardEl = (e.target as HTMLElement).closest('.queue-item') as HTMLElement | null;
+                      if (cardEl) {
+                        const rect = cardEl.getBoundingClientRect();
+                        setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                        setDragCoords({ x: e.clientX, y: e.clientY });
+                        setDraggedWidth(rect.width);
+                      }
+
+                      invoke('log_debug', { msg: `PointerDown on handle: index=${index}` });
+
+                      const handlePointerMove = (moveEvent: PointerEvent) => {
+                        setDragCoords({ x: moveEvent.clientX, y: moveEvent.clientY });
+                        const el = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+                        const itemEl = el?.closest('.queue-item');
+                        if (itemEl) {
+                          const idxStr = itemEl.getAttribute('data-index');
+                          if (idxStr !== null) {
+                            const targetIdx = parseInt(idxStr, 10);
+                            if (!isNaN(targetIdx) && targetIdx !== draggedIndexRef.current) {
+                              setDragOverIndex(targetIdx);
+                            }
+                          }
+                        }
+                      };
+
+                      const handlePointerUp = async (upEvent: PointerEvent) => {
+                        window.removeEventListener('pointermove', handlePointerMove);
+                        window.removeEventListener('pointerup', handlePointerUp);
+
+                        const fromIdx = draggedIndexRef.current;
+                        const el = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+                        const itemEl = el?.closest('.queue-item');
+                        let toIdx = dragOverIndex;
+                        if (itemEl) {
+                          const idxStr = itemEl.getAttribute('data-index');
+                          if (idxStr !== null && !isNaN(parseInt(idxStr, 10))) {
+                            toIdx = parseInt(idxStr, 10);
+                          }
+                        }
+
+                        invoke('log_debug', { msg: `PointerUp: fromIdx=${fromIdx}, toIdx=${toIdx}` });
+
+                        lastDragEndTimeRef.current = Date.now();
+                        draggedIndexRef.current = null;
+                        setDraggedIndex(null);
+                        setDragOverIndex(null);
+                        setDragCoords(null);
+
+                        if (fromIdx !== null && toIdx !== null && fromIdx !== toIdx && !isNaN(fromIdx) && !isNaN(toIdx)) {
+                          const newItems = [...state.items];
+                          const [movedItem] = newItems.splice(fromIdx, 1);
+                          newItems.splice(toIdx, 0, movedItem);
+
+                          invoke('log_debug', { msg: `Pointer reordering: ${newItems.map(i => i.content).join(' -> ')}` });
+                          setState((prev) => ({ ...prev, items: newItems }));
+                          await handleReorder(newItems);
+                        }
+                      };
+
+                      window.addEventListener('pointermove', handlePointerMove);
+                      window.addEventListener('pointerup', handlePointerUp);
+                    }}
+                  >
                     <GripVertical size={16} />
                   </span>
                   <span className="index-pill">{index + 1}</span>
@@ -313,6 +342,30 @@ export default function App() {
           })
         )}
       </section>
+
+      {/* Floating Drag Ghost Overlay */}
+      {draggedIndex !== null && dragCoords !== null && state.items[draggedIndex] && (
+        <div
+          className="queue-item floating-ghost active"
+          style={{
+            position: 'fixed',
+            left: `${dragCoords.x - dragOffset.x}px`,
+            top: `${dragCoords.y - dragOffset.y}px`,
+            width: `${draggedWidth}px`,
+            pointerEvents: 'none',
+            zIndex: 99999,
+          }}
+        >
+          <div className="item-left">
+            <span className="drag-handle" style={{ color: 'var(--text-primary)' }}>
+              <GripVertical size={16} />
+            </span>
+            <span className="index-pill">{draggedIndex + 1}</span>
+            <span className="item-content">{state.items[draggedIndex].content}</span>
+          </div>
+          {draggedIndex === state.current_index && <span className="next-badge">{t.nextBadge}</span>}
+        </div>
+      )}
     </div>
   );
 }

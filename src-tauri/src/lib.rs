@@ -12,6 +12,11 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 #[tauri::command]
+fn log_debug(msg: String) {
+    println!("[UI LOG] {}", msg);
+}
+
+#[tauri::command]
 fn get_sequence_state(state: State<'_, AppState>) -> SequenceState {
     state.get_state()
 }
@@ -70,6 +75,7 @@ pub fn run() {
         .manage(app_state.clone())
         .manage(monitor.clone())
         .invoke_handler(tauri::generate_handler![
+            log_debug,
             get_sequence_state,
             set_target_length,
             reset_sequence_index,
