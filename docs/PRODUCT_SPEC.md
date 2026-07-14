@@ -56,9 +56,8 @@
 ### 4.1 多目標打包設定 (`tauri.conf.json`)
 - `bundle.targets` 設定為 `"all"`，確保單一配置檔即可支援編譯全平台安裝產物。
 
-### 4.2 macOS 本地靜默 DMG 打包技術
-- 本地打包 DMG 時嚴禁開啟或干擾 Finder GUI 視窗。
-- 採用靜默命令列封裝步驟：
+### 4.2 macOS 靜默封裝流程 (.dmg)
+- 採用靜默命令列進行 DMG 映像檔建立，避免產生視窗或干擾系統操作：
   ```bash
   npm run build && npx tauri build
   rm -f src-tauri/target/release/bundle/dmg/MultiCopyPaste_0.0.5_aarch64.dmg
