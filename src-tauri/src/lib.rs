@@ -8,7 +8,7 @@ use state::AppState;
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 #[tauri::command]
@@ -17,29 +17,39 @@ fn get_sequence_state(state: State<'_, AppState>) -> SequenceState {
 }
 
 #[tauri::command]
-fn set_target_length(length: usize, state: State<'_, AppState>) -> SequenceState {
-    state.set_target_length(length)
+fn set_target_length(length: usize, state: State<'_, AppState>, app: AppHandle) -> SequenceState {
+    let new_state = state.set_target_length(length);
+    let _ = app.emit("sequence-updated", new_state.clone());
+    new_state
 }
 
 #[tauri::command]
-fn reset_sequence_index(state: State<'_, AppState>) -> SequenceState {
+fn reset_sequence_index(state: State<'_, AppState>, app: AppHandle) -> SequenceState {
     state.reset_index();
-    state.get_state()
+    let new_state = state.get_state();
+    let _ = app.emit("sequence-updated", new_state.clone());
+    new_state
 }
 
 #[tauri::command]
-fn set_sequence_index(index: usize, state: State<'_, AppState>) -> SequenceState {
-    state.set_sequence_index(index)
+fn set_sequence_index(index: usize, state: State<'_, AppState>, app: AppHandle) -> SequenceState {
+    let new_state = state.set_sequence_index(index);
+    let _ = app.emit("sequence-updated", new_state.clone());
+    new_state
 }
 
 #[tauri::command]
-fn update_sequence_items(items: Vec<ClipboardItem>, state: State<'_, AppState>) -> SequenceState {
-    state.set_items(items)
+fn update_sequence_items(items: Vec<ClipboardItem>, state: State<'_, AppState>, app: AppHandle) -> SequenceState {
+    let new_state = state.set_items(items);
+    let _ = app.emit("sequence-updated", new_state.clone());
+    new_state
 }
 
 #[tauri::command]
-fn clear_sequence(state: State<'_, AppState>) -> SequenceState {
-    state.clear_all()
+fn clear_sequence(state: State<'_, AppState>, app: AppHandle) -> SequenceState {
+    let new_state = state.clear_all();
+    let _ = app.emit("sequence-updated", new_state.clone());
+    new_state
 }
 
 #[tauri::command]

@@ -317,6 +317,14 @@ body {
   background: rgba(99, 102, 241, 0.15);
 }
 
+.queue-item * {
+  pointer-events: none;
+}
+
+.queue-item .drag-handle {
+  pointer-events: auto;
+}
+
 .drag-handle {
   display: flex;
   align-items: center;

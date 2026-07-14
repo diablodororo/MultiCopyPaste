@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
@@ -45,6 +45,8 @@ export default function App() {
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const draggedIndexRef = useRef<number | null>(null);
+  const lastDragEndTimeRef = useRef<number>(0);
 
   const handleLanguageChange = (newLang: Language) => {
     setLang(newLang);
@@ -237,32 +239,53 @@ export default function App() {
                 key={item.id}
                 draggable={true}
                 onDragStart={(e) => {
+                  draggedIndexRef.current = index;
                   setDraggedIndex(index);
                   e.dataTransfer.effectAllowed = 'move';
                 }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (dragOverIndex !== index) {
+                    setDragOverIndex(index);
+                  }
+                }}
                 onDragOver={(e) => {
                   e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
                   if (dragOverIndex !== index) {
                     setDragOverIndex(index);
                   }
                 }}
                 onDragEnd={() => {
+                  lastDragEndTimeRef.current = Date.now();
+                  draggedIndexRef.current = null;
                   setDraggedIndex(null);
                   setDragOverIndex(null);
                 }}
                 onDrop={async (e) => {
                   e.preventDefault();
-                  if (draggedIndex === null || draggedIndex === index) return;
-                  const newItems = [...state.items];
-                  const [movedItem] = newItems.splice(draggedIndex, 1);
-                  newItems.splice(index, 0, movedItem);
+                  lastDragEndTimeRef.current = Date.now();
+                  const fromIdx = draggedIndexRef.current;
+                  draggedIndexRef.current = null;
                   setDraggedIndex(null);
                   setDragOverIndex(null);
+
+                  if (fromIdx === null || fromIdx === index) return;
+                  const newItems = [...state.items];
+                  const [movedItem] = newItems.splice(fromIdx, 1);
+                  newItems.splice(index, 0, movedItem);
+
+                  setState((prev) => ({ ...prev, items: newItems }));
                   await handleReorder(newItems);
                 }}
                 className={`queue-item ${isActive ? 'active' : ''} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
-                onClick={() => {
-                  if (draggedIndex !== null) return;
+                onClick={(e) => {
+                  if (draggedIndexRef.current !== null || Date.now() - lastDragEndTimeRef.current < 300) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
                   if (isActive) {
                     handleManualPaste();
                   } else {
