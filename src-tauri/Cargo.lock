@@ -70,6 +70,7 @@ version = "0.1.0"
 dependencies = [
  "arboard",
  "chrono",
+ "core-graphics 0.24.0",
  "enigo",
  "log",
  "parking_lot",
