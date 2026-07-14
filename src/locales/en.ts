@@ -1,7 +1,7 @@
 export const en = {
   appTitle: 'MultiCopyPaste',
-  appSubtitle: 'Sequential Multi-Copy Paste Tool (macOS / Windows)',
-  appVersion: 'v0.0.4',
+  appSubtitle: 'Sequential Multi-Copy & Paste Tool',
+  appVersion: 'v0.0.5',
   statusListening: 'Listening in Background',
   sequenceLengthTitle: 'Sequence Cycle Length (N)',
   sequenceLengthDesc: 'Automatically captures the last N copied items for cycling',
