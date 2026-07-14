@@ -1,32 +1,56 @@
-# React + TypeScript + Vite
+# MultiCopyPaste 🚀
+**跨平台序列循環剪貼簿小工具 (macOS / Windows)**
+*[English Version](README.en.md)*
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+---
 
-Currently, two official plugins are available:
+## 💡 痛點與為此而生的解決方案
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+在日常文書處理、試算表搬移或填寫線上表單時，我們經常需要重複：
+`複製A -> 貼上A -> 複製B -> 貼上B -> 複製C -> 貼上C...`
 
-## React Compiler
+**MultiCopyPaste** 讓您可以在來源視窗**一口氣依序複製 N 筆資料 (A, B, C)**，接著在目標視窗連續按下 **全域貼上快捷鍵**，工具就會依序將 `A -> B -> C -> A -> B -> C` 自動循環貼上！
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## ✨ 產品特色
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- ⚡ **極致輕量與低耗能**：基於 Tauri v2 + Rust 打造，背景常駐記憶體僅約 18~25 MB。
+- 🌐 **雙語介面 (i18n)**：支援繁體中文與 English 即時切換。
+- 🎹 **全域快捷鍵**：按下 `Ctrl + Option + V` (macOS) 或 `Ctrl + Alt + V` (Windows) 即可瞬間依序貼上。
+- 🛡️ **穩定防當機制**：macOS 採用 Apple 原生 CoreGraphics `CGEvent`，避免跨執行緒崩潰。
+- 🎨 **現代高質感 UI**：絕美暗黑玻璃擬態介面，及時預覽當前序列與 `NEXT` 貼上指標。
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+---
+
+## ⌨️ 快捷鍵與操作說明
+
+| 操作 | 預設快捷鍵 |
+| :--- | :--- |
+| **依序循環貼上** | `Ctrl + Option + V` (macOS) / `Ctrl + Alt + V` (Windows) |
+| **重置循環指標** | 可於介面上點擊「重置回頂部」按鈕 |
+
+---
+
+## 🛠️ 開發與建置
+
+### 前置需求
+- Node.js (>= 18)
+- Rust (>= 1.77)
+
+### 啟動開發伺服器
+```bash
+npm install
+npx tauri dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 打包正式版應用程式 (Build App / DMG)
+```bash
+npx tauri build
+```
+打包完成後產物將放置於 `src-tauri/target/release/bundle/dmg/` 目錄中。
+
+---
+
+## 📄 授權條款
+MIT License

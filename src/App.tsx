@@ -8,6 +8,7 @@ import {
   Keyboard,
   ClipboardList
 } from 'lucide-react';
+import { type Language, translations } from './locales';
 
 interface ClipboardItem {
   id: string;
@@ -25,6 +26,13 @@ interface SequenceState {
 }
 
 export default function App() {
+  const [lang, setLang] = useState<Language>(() => {
+    const saved = localStorage.getItem('app_lang');
+    return saved === 'en' ? 'en' : 'zh';
+  });
+
+  const t = translations[lang];
+
   const [state, setState] = useState<SequenceState>({
     target_length: 3,
     current_index: 0,
@@ -33,6 +41,11 @@ export default function App() {
     shortcut: 'Ctrl+Option+V / Ctrl+Alt+V',
     is_enabled: true
   });
+
+  const handleLanguageChange = (newLang: Language) => {
+    setLang(newLang);
+    localStorage.setItem('app_lang', newLang);
+  };
 
   const fetchState = async () => {
     try {
@@ -100,13 +113,25 @@ export default function App() {
             <Copy color="#fff" size={20} />
           </div>
           <div className="title-text">
-            <h1>MultiCopyPaste</h1>
-            <span>序列循環剪貼工具 (macOS / Windows)</span>
+            <h1>{t.appTitle}</h1>
+            <span>{t.appSubtitle}</span>
           </div>
         </div>
-        <div className="status-badge">
-          <span className="status-dot"></span>
-          後台監聽中
+
+        <div className="header-right">
+          <span className="version-pill">{t.appVersion}</span>
+          <select
+            className="lang-select"
+            value={lang}
+            onChange={(e) => handleLanguageChange(e.target.value as Language)}
+          >
+            <option value="zh">{t.langZh}</option>
+            <option value="en">{t.langEn}</option>
+          </select>
+          <div className="status-badge">
+            <span className="status-dot"></span>
+            {t.statusListening}
+          </div>
         </div>
       </header>
 
@@ -114,8 +139,8 @@ export default function App() {
       <section className="config-card">
         <div className="config-row">
           <div className="config-label">
-            <h3>序列循環長度 (N)</h3>
-            <p>自動擷取最近連續複製的 N 筆項目進行循環</p>
+            <h3>{t.sequenceLengthTitle}</h3>
+            <p>{t.sequenceLengthDesc}</p>
           </div>
           <div className="stepper-group">
             <button
@@ -138,12 +163,12 @@ export default function App() {
 
         <div className="config-row">
           <div className="config-label">
-            <h3>依序貼上快捷鍵</h3>
-            <p>在任意應用程式中按下即可依序貼上</p>
+            <h3>{t.shortcutTitle}</h3>
+            <p>{t.shortcutDesc}</p>
           </div>
           <div className="shortcut-badge">
             <Keyboard size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
-            Ctrl + Option + V / Ctrl + Alt + V
+            {t.shortcutBadge}
           </div>
         </div>
       </section>
@@ -151,16 +176,16 @@ export default function App() {
       {/* Queue Display Section */}
       <section className="queue-header">
         <h2>
-          目前貼上佇列 ({state.items.length}/{state.target_length})
+          {t.queueTitle} ({state.items.length}/{state.target_length})
         </h2>
         <div className="action-buttons">
-          <button className="btn-secondary" onClick={handleResetIndex} title="回到第 1 筆">
+          <button className="btn-secondary" onClick={handleResetIndex} title={t.resetTop}>
             <RotateCcw size={14} />
-            重置回頂部
+            {t.resetTop}
           </button>
-          <button className="btn-secondary" onClick={handleClear} title="清除記錄">
+          <button className="btn-secondary" onClick={handleClear} title={t.clearAll}>
             <Trash2 size={14} />
-            清空
+            {t.clearAll}
           </button>
         </div>
       </section>
@@ -170,8 +195,8 @@ export default function App() {
         {state.items.length === 0 ? (
           <div className="empty-state">
             <ClipboardList size={32} color="var(--text-muted)" />
-            <p>佇列目前為空</p>
-            <span>請在任意視窗連續複製 {state.target_length} 段文字，將會自動在此準備循環貼上！</span>
+            <p>{t.emptyTitle}</p>
+            <span>{t.emptyDesc(state.target_length)}</span>
           </div>
         ) : (
           state.items.map((item, index) => {
@@ -187,7 +212,7 @@ export default function App() {
                   <span className="index-pill">{index + 1}</span>
                   <span className="item-content">{item.content}</span>
                 </div>
-                {isActive && <span className="next-badge">準備貼上 NEXT</span>}
+                {isActive && <span className="next-badge">{t.nextBadge}</span>}
               </div>
             );
           })
