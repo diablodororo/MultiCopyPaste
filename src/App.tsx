@@ -242,6 +242,7 @@ export default function App() {
                   draggedIndexRef.current = index;
                   setDraggedIndex(index);
                   e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', index.toString());
                 }}
                 onDragEnter={(e) => {
                   e.preventDefault();
@@ -259,19 +260,24 @@ export default function App() {
                 }}
                 onDragEnd={() => {
                   lastDragEndTimeRef.current = Date.now();
-                  draggedIndexRef.current = null;
                   setDraggedIndex(null);
                   setDragOverIndex(null);
+                  setTimeout(() => {
+                    draggedIndexRef.current = null;
+                  }, 50);
                 }}
                 onDrop={async (e) => {
                   e.preventDefault();
                   lastDragEndTimeRef.current = Date.now();
-                  const fromIdx = draggedIndexRef.current;
+                  const dataStr = e.dataTransfer.getData('text/plain');
+                  const fromIdx = (dataStr && !isNaN(parseInt(dataStr, 10)))
+                    ? parseInt(dataStr, 10)
+                    : draggedIndexRef.current;
                   draggedIndexRef.current = null;
                   setDraggedIndex(null);
                   setDragOverIndex(null);
 
-                  if (fromIdx === null || fromIdx === index) return;
+                  if (fromIdx === null || fromIdx === undefined || isNaN(fromIdx) || fromIdx === index) return;
                   const newItems = [...state.items];
                   const [movedItem] = newItems.splice(fromIdx, 1);
                   newItems.splice(index, 0, movedItem);
