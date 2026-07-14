@@ -7,6 +7,7 @@ use models::{ClipboardItem, SequenceState};
 use state::AppState;
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, State};
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 #[tauri::command]
 fn get_sequence_state(state: State<'_, AppState>) -> SequenceState {
@@ -87,12 +88,11 @@ pub fn run() {
                     .build(),
             )?;
 
-            // Register default Option+V / Alt+V shortcut
-            use tauri_plugin_global_shortcut::GlobalShortcutExt;
+            // Register default Control+Alt+V (Ctrl+Option+V) shortcut
             #[cfg(target_os = "macos")]
-            let default_shortcut = "Alt+V"; // Option is Alt in shortcut syntax
+            let default_shortcut = "Control+Alt+V";
             #[cfg(not(target_os = "macos"))]
-            let default_shortcut = "Alt+V";
+            let default_shortcut = "Control+Alt+V";
 
             if let Err(e) = app.handle().global_shortcut().register(default_shortcut) {
                 eprintln!("Failed to register global shortcut {}: {}", default_shortcut, e);

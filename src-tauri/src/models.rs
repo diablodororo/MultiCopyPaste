@@ -25,7 +25,7 @@ impl Default for SequenceState {
             current_index: 0,
             items: Vec::new(),
             history: Vec::new(),
-            shortcut: "Option+V".to_string(),
+            shortcut: "Ctrl+Option+V".to_string(),
             is_enabled: true,
         }
     }

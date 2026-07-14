@@ -30,7 +30,7 @@ export default function App() {
     current_index: 0,
     items: [],
     history: [],
-    shortcut: 'Option+V / Alt+V',
+    shortcut: 'Ctrl+Option+V / Ctrl+Alt+V',
     is_enabled: true
   });
 
@@ -143,7 +143,7 @@ export default function App() {
           </div>
           <div className="shortcut-badge">
             <Keyboard size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
-            Option + V / Alt + V
+            Ctrl + Option + V / Ctrl + Alt + V
           </div>
         </div>
       </section>
