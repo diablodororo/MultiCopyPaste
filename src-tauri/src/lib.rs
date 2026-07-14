@@ -6,6 +6,8 @@ use clipboard::ClipboardMonitor;
 use models::{ClipboardItem, SequenceState};
 use state::AppState;
 use std::sync::Arc;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
@@ -71,6 +73,58 @@ pub fn run() {
 
             // Start clipboard monitor thread
             monitor.start_monitoring(app_state.clone(), app.handle().clone());
+
+            // Build System Tray Icon & Menu
+            let show_i = MenuItem::with_id(app.handle(), "show", "顯示視窗 / Show Window", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app.handle(), "quit", "離開 / Quit", true, None::<&str>)?;
+            let tray_menu = Menu::with_items(app.handle(), &[&show_i, &quit_i])?;
+
+            let mut tray_builder = TrayIconBuilder::new()
+                .menu(&tray_menu)
+                .show_menu_on_left_click(true)
+                .on_menu_event(|app: &AppHandle, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray: &TrayIcon, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                });
+
+            if let Some(icon) = app.default_window_icon() {
+                tray_builder = tray_builder.icon(icon.clone());
+            }
+
+            let _tray = tray_builder.build(app.handle())?;
+
+            // Intercept window close event to hide to tray instead of exiting
+            if let Some(window) = app.get_webview_window("main") {
+                let window_handle = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        let _ = window_handle.hide();
+                        api.prevent_close();
+                    }
+                });
+            }
 
             // Register global shortcut plugin
             app.handle().plugin(

@@ -1,7 +1,7 @@
 export const zh = {
   appTitle: 'MultiCopyPaste',
   appSubtitle: '序列循環剪貼工具 (macOS / Windows)',
-  appVersion: 'v0.0.3',
+  appVersion: 'v0.0.4',
   statusListening: '後台監聽中',
   sequenceLengthTitle: '序列循環長度 (N)',
   sequenceLengthDesc: '自動擷取最近連續複製的 N 筆項目進行循環',
