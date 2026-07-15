@@ -173,7 +173,7 @@ export default function App() {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (!editContent.trim()) return;
+    if (editContent.length === 0) return;
     try {
       const res = await invoke<SequenceState>('update_sequence_item', { id, content: editContent });
       setState(res);
@@ -355,7 +355,7 @@ export default function App() {
                       const handlePointerEnd = async (upEvent: PointerEvent) => {
                         try {
                           handleEl.releasePointerCapture(upEvent.pointerId);
-                        } catch (err) {
+                        } catch {
                           // Ignore if capture was already lost
                         }
                         window.removeEventListener('pointermove', handlePointerMove);
@@ -418,14 +418,13 @@ export default function App() {
                   </span>
                   {isEditing ? (
                     <div className="edit-input-group" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="text"
+                      <textarea
                         className="edit-input"
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveEdit(item.id, e as any);
-                          if (e.key === 'Escape') handleCancelEdit(e as any);
+                          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSaveEdit(item.id, e);
+                          if (e.key === 'Escape') handleCancelEdit(e);
                         }}
                         autoFocus
                       />

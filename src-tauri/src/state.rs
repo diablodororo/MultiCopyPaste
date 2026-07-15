@@ -1,6 +1,7 @@
 use crate::models::{ClipboardItem, SequenceState};
 use chrono::Utc;
 use parking_lot::Mutex;
+use std::collections::HashSet;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -110,15 +111,34 @@ impl AppState {
 
     pub fn set_items(&self, items: Vec<ClipboardItem>) -> SequenceState {
         let mut state = self.inner.lock();
+        let requested_ids: HashSet<&str> = items.iter().map(|item| item.id.as_str()).collect();
+        let current_ids: HashSet<&str> = state.items.iter().map(|item| item.id.as_str()).collect();
+        if items.len() != state.items.len()
+            || requested_ids.len() != items.len()
+            || requested_ids != current_ids
+        {
+            return state.clone();
+        }
+
         let old_active_id = state.items.get(state.current_index).map(|i| i.id.clone());
-        let items_len = items.len();
-        state.items = items.clone();
+        let canonical_items = state.items.clone();
+        state.items = items
+            .iter()
+            .filter_map(|requested| {
+                canonical_items
+                    .iter()
+                    .find(|item| item.id == requested.id)
+                    .cloned()
+            })
+            .collect();
+        let items_len = state.items.len();
 
         // Synchronize history tail with the reordered items so subsequent copy events preserve order
         let history_len = state.history.len();
         if history_len >= items_len && items_len > 0 {
             let start_idx = history_len - items_len;
-            for (i, item) in items.into_iter().enumerate() {
+            let reordered_items = state.items.clone();
+            for (i, item) in reordered_items.into_iter().enumerate() {
                 state.history[start_idx + i] = item;
             }
         } else {
@@ -176,3 +196,179 @@ impl AppState {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn record(state: &AppState, content: &str) {
+        assert!(state.record_copy(content.to_string()));
+    }
+
+    #[test]
+    fn record_copy_preserves_whitespace_and_multiline_content() {
+        let state = AppState::new();
+        let content = "  indented\nsecond line\n";
+
+        record(&state, content);
+
+        let snapshot = state.get_state();
+        assert_eq!(snapshot.items[0].content, content);
+        assert_eq!(snapshot.history[0].content, content);
+    }
+
+    #[test]
+    fn record_copy_only_rejects_an_exact_immediate_duplicate() {
+        let state = AppState::new();
+
+        record(&state, " value ");
+        assert!(!state.record_copy(" value ".to_string()));
+        record(&state, "value");
+        record(&state, "other");
+        record(&state, "value");
+
+        let snapshot = state.get_state();
+        assert_eq!(snapshot.history.len(), 4);
+        assert_eq!(snapshot.history[0].content, " value ");
+        assert_eq!(snapshot.items[0].content, "value");
+        assert_eq!(snapshot.items[1].content, "other");
+        assert_eq!(snapshot.items[2].content, "value");
+        assert_eq!(snapshot.history[3].content, "value");
+    }
+
+    #[test]
+    fn queue_tracks_latest_target_length_and_resets_index_on_copy() {
+        let state = AppState::new();
+        state.set_target_length(2);
+        record(&state, "A");
+        record(&state, "B");
+        state.set_sequence_index(1);
+        record(&state, "C");
+
+        let snapshot = state.get_state();
+        let contents: Vec<_> = snapshot
+            .items
+            .iter()
+            .map(|item| item.content.as_str())
+            .collect();
+        assert_eq!(contents, vec!["B", "C"]);
+        assert_eq!(snapshot.current_index, 0);
+    }
+
+    #[test]
+    fn advance_cycles_in_queue_order() {
+        let state = AppState::new();
+        record(&state, "A");
+        record(&state, "B");
+        record(&state, "C");
+
+        let pasted: Vec<_> = (0..4)
+            .map(|_| state.advance_and_get_paste().unwrap().content)
+            .collect();
+
+        assert_eq!(pasted, vec!["A", "B", "C", "A"]);
+        assert_eq!(state.get_state().current_index, 1);
+    }
+
+    #[test]
+    fn reordering_preserves_the_active_item_and_future_queue_order() {
+        let state = AppState::new();
+        record(&state, "A");
+        record(&state, "B");
+        record(&state, "C");
+        state.set_sequence_index(1);
+
+        let mut reordered = state.get_state().items;
+        reordered.swap(0, 2);
+        let snapshot = state.set_items(reordered);
+
+        let contents: Vec<_> = snapshot
+            .items
+            .iter()
+            .map(|item| item.content.as_str())
+            .collect();
+        assert_eq!(contents, vec!["C", "B", "A"]);
+        assert_eq!(snapshot.items[snapshot.current_index].content, "B");
+        let history_tail: Vec<_> = snapshot
+            .history
+            .iter()
+            .map(|item| item.content.as_str())
+            .collect();
+        assert_eq!(history_tail, vec!["C", "B", "A"]);
+    }
+
+    #[test]
+    fn reordering_rejects_non_permutations_and_forged_content() {
+        let state = AppState::new();
+        record(&state, "A");
+        record(&state, "B");
+        let original = state.get_state();
+
+        let mut duplicate = original.items.clone();
+        duplicate[1] = duplicate[0].clone();
+        assert_eq!(state.set_items(duplicate).items, original.items);
+
+        let mut missing = original.items.clone();
+        missing.pop();
+        assert_eq!(state.set_items(missing).items, original.items);
+
+        let mut forged = original.items.clone();
+        forged.reverse();
+        forged[0].content = "forged".to_string();
+        let snapshot = state.set_items(forged);
+        assert_eq!(snapshot.items[0].content, "B");
+        assert_eq!(snapshot.items[1].content, "A");
+        assert!(snapshot.items.iter().all(|item| item.content != "forged"));
+        assert!(snapshot.history.iter().all(|item| item.content != "forged"));
+    }
+
+    #[test]
+    fn history_is_capped_without_breaking_the_active_queue() {
+        let state = AppState::new();
+        for index in 0..101 {
+            record(&state, &format!("item-{index}"));
+        }
+
+        let snapshot = state.get_state();
+        assert_eq!(snapshot.history.len(), 100);
+        assert_eq!(snapshot.history[0].content, "item-1");
+        let contents: Vec<_> = snapshot
+            .items
+            .iter()
+            .map(|item| item.content.as_str())
+            .collect();
+        assert_eq!(contents, vec!["item-98", "item-99", "item-100"]);
+        assert_eq!(snapshot.current_index, 0);
+    }
+
+    #[test]
+    fn deleting_items_keeps_current_index_valid() {
+        let state = AppState::new();
+        record(&state, "A");
+        record(&state, "B");
+        record(&state, "C");
+        state.set_sequence_index(2);
+
+        let a_id = state.get_state().items[0].id.clone();
+        let snapshot = state.delete_item(a_id);
+        assert_eq!(snapshot.current_index, 1);
+        assert_eq!(snapshot.items[snapshot.current_index].content, "C");
+
+        let c_id = snapshot.items[1].id.clone();
+        let snapshot = state.delete_item(c_id);
+        assert_eq!(snapshot.current_index, 0);
+        assert_eq!(snapshot.items[0].content, "B");
+    }
+
+    #[test]
+    fn editing_preserves_exact_content_in_queue_and_history() {
+        let state = AppState::new();
+        record(&state, "before");
+        let id = state.get_state().items[0].id.clone();
+        let content = "  after\nwith newline\n";
+
+        let snapshot = state.update_item_content(id, content.to_string());
+
+        assert_eq!(snapshot.items[0].content, content);
+        assert_eq!(snapshot.history[0].content, content);
+    }
+}

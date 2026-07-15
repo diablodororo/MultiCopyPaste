@@ -37,6 +37,8 @@
 - [x] **卡片懸停快捷工具列 (Item Action Toolbar)**：在卡片右側或懸停時，顯示微型「編輯 (`Edit`)」與「刪除 (`Trash`)」按鈕，方便即時微調單筆文字內容或剔除不需要的歷史紀錄。
 - [x] **雙螢幕與 DPI 解析度適應驗證**：透過 `setPointerCapture` / `releasePointerCapture` 與 `elementFromPoint` 強化 Pointer Events 在不同 DPI 或跨多螢幕時的座標捕捉與 `floating-ghost` 渲染穩定度。
 - [x] **手動單擊卡片跳轉指標 (Jump to Item)**：點擊任一卡片的序號標籤 (`index-pill`) 即可觸發 `set_sequence_index`，將下一個要貼上的目標 (`current_index`) 直接切換至該卡片。
+- [x] **剪貼資料保真**：擷取、貼回與編輯流程完整保留前後空白、縮排及換行，並以多行編輯器支援程式碼與結構化文字。
+- [x] **核心狀態測試與重排防護**：為擷取、去重、循環、排序、刪除、編輯及 history 上限建立 Rust 單元測試；重排只接受既有項目的完整排列，避免錯誤 IPC payload 污染內容。
 
 ---
 

@@ -511,6 +511,10 @@ body {
   font-family: inherit;
   outline: none;
   width: 220px;
+  min-height: 54px;
+  max-height: 140px;
+  resize: vertical;
+  white-space: pre-wrap;
   transition: box-shadow 0.15s ease;
 }
 

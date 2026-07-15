@@ -42,7 +42,6 @@ impl ClipboardMonitor {
 
             loop {
                 if let Ok(text) = clipboard.get_text() {
-                    let text = text.trim().to_string();
                     if !text.is_empty() {
                         let mut last = last_text.lock();
                         if *last != text {
@@ -66,7 +65,7 @@ impl ClipboardMonitor {
             // Update system clipboard
             if let Ok(mut cb) = Clipboard::new() {
                 let _ = cb.set_text(item.content.clone());
-                *self.last_text.lock() = item.content.trim().to_string();
+                *self.last_text.lock() = item.content.clone();
             }
 
             // Emit updated sequence to UI
