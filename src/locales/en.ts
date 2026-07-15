@@ -1,7 +1,7 @@
 export const en = {
   appTitle: 'MultiCopyPaste',
   appSubtitle: 'Sequential Multi-Copy & Paste Tool',
-  appVersion: 'v0.0.6',
+  appVersion: 'v0.0.7',
   statusListening: 'Listening in Background',
   sequenceLengthTitle: 'Sequence Cycle Length (N)',
   sequenceLengthDesc: 'Automatically captures the last N copied items for cycling',
@@ -18,4 +18,9 @@ export const en = {
   languageLabel: 'Language',
   langZh: '繁體中文',
   langEn: 'English',
+  editItem: 'Edit text content',
+  deleteItem: 'Delete item',
+  saveEdit: 'Save changes',
+  cancelEdit: 'Cancel edit',
+  jumpToItem: 'Click this index to set as next item to paste',
 };

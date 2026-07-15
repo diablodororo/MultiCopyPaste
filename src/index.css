@@ -330,7 +330,12 @@ body {
   pointer-events: none;
 }
 
-.queue-item .drag-handle {
+.queue-item .drag-handle,
+.queue-item .clickable-pill,
+.queue-item .item-actions,
+.queue-item .action-btn,
+.queue-item .edit-input-group,
+.queue-item .edit-input {
   pointer-events: auto;
 }
 
@@ -389,6 +394,18 @@ body {
   color: #fff;
 }
 
+.clickable-pill {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clickable-pill:hover {
+  transform: scale(1.1);
+  background: var(--accent-color);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
 .item-content {
   font-size: 0.9rem;
   font-weight: 500;
@@ -396,7 +413,99 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 280px;
+  max-width: 260px;
+}
+
+.item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transform: translateX(6px);
+  transition: all 0.2s ease;
+}
+
+.queue-item:hover .item-actions,
+.queue-item.active .item-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.action-btn.edit-btn:hover {
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.3);
+  background: rgba(96, 165, 250, 0.12);
+}
+
+.action-btn.delete-btn:hover {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.action-btn.save-btn {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success-color);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.action-btn.save-btn:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+
+.action-btn.cancel-btn:hover {
+  color: #f87171;
+}
+
+.edit-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.edit-input {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--accent-color);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  width: 220px;
+  transition: box-shadow 0.15s ease;
+}
+
+.edit-input:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
 }
 
 .next-badge {

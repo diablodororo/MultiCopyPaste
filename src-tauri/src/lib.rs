@@ -58,6 +58,20 @@ fn clear_sequence(state: State<'_, AppState>, app: AppHandle) -> SequenceState {
 }
 
 #[tauri::command]
+fn delete_sequence_item(id: String, state: State<'_, AppState>, app: AppHandle) -> SequenceState {
+    let new_state = state.delete_item(id);
+    let _ = app.emit("sequence-updated", new_state.clone());
+    new_state
+}
+
+#[tauri::command]
+fn update_sequence_item(id: String, content: String, state: State<'_, AppState>, app: AppHandle) -> SequenceState {
+    let new_state = state.update_item_content(id, content);
+    let _ = app.emit("sequence-updated", new_state.clone());
+    new_state
+}
+
+#[tauri::command]
 fn manual_paste_next(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -82,6 +96,8 @@ pub fn run() {
             set_sequence_index,
             update_sequence_items,
             clear_sequence,
+            delete_sequence_item,
+            update_sequence_item,
             manual_paste_next
         ])
         .setup(move |app| {

@@ -1,7 +1,7 @@
 export const zh = {
   appTitle: 'MultiCopyPaste 序列循環剪貼簿',
   appSubtitle: '跨視窗連環複製、依序貼上小工具',
-  appVersion: 'v0.0.6',
+  appVersion: 'v0.0.7',
   statusListening: '後台監聽中',
   sequenceLengthTitle: '序列循環長度 (N)',
   sequenceLengthDesc: '自動擷取最近連續複製的 N 筆項目進行循環',
@@ -18,4 +18,9 @@ export const zh = {
   languageLabel: '語言',
   langZh: '繁體中文',
   langEn: 'English',
+  editItem: '編輯文字內容',
+  deleteItem: '刪除單筆項目',
+  saveEdit: '儲存修改',
+  cancelEdit: '取消編輯',
+  jumpToItem: '點擊此序號直接指定為下一個貼上目標',
 };

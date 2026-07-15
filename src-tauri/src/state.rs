@@ -145,4 +145,34 @@ impl AppState {
         state.current_index = 0;
         state.clone()
     }
+
+    pub fn delete_item(&self, id: String) -> SequenceState {
+        let mut state = self.inner.lock();
+        if let Some(pos) = state.items.iter().position(|i| i.id == id) {
+            state.items.remove(pos);
+            if state.items.is_empty() {
+                state.current_index = 0;
+            } else if pos < state.current_index {
+                state.current_index -= 1;
+            } else if state.current_index >= state.items.len() {
+                state.current_index = 0;
+            }
+        }
+        if let Some(h_pos) = state.history.iter().position(|i| i.id == id) {
+            state.history.remove(h_pos);
+        }
+        state.clone()
+    }
+
+    pub fn update_item_content(&self, id: String, new_content: String) -> SequenceState {
+        let mut state = self.inner.lock();
+        if let Some(item) = state.items.iter_mut().find(|i| i.id == id) {
+            item.content = new_content.clone();
+        }
+        if let Some(h_item) = state.history.iter_mut().find(|i| i.id == id) {
+            h_item.content = new_content;
+        }
+        state.clone()
+    }
 }
+

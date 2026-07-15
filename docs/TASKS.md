@@ -33,14 +33,14 @@
 - [x] 實作 `floating-ghost` 游標即時跟隨浮動卡片預覽層（零延遲緊貼、深層陰影與毛玻璃質感）與目標卡片高亮邊框提示
 - [x] 執行單元與建置檢查 (`npm run build` + `cargo check`) 並提交至 GitHub (`c988f91`)
 
+### Phase 6：使用者體驗優化與卡片微調操作 (`v0.0.7`)
+- [x] **卡片懸停快捷工具列 (Item Action Toolbar)**：在卡片右側或懸停時，顯示微型「編輯 (`Edit`)」與「刪除 (`Trash`)」按鈕，方便即時微調單筆文字內容或剔除不需要的歷史紀錄。
+- [x] **雙螢幕與 DPI 解析度適應驗證**：透過 `setPointerCapture` / `releasePointerCapture` 與 `elementFromPoint` 強化 Pointer Events 在不同 DPI 或跨多螢幕時的座標捕捉與 `floating-ghost` 渲染穩定度。
+- [x] **手動單擊卡片跳轉指標 (Jump to Item)**：點擊任一卡片的序號標籤 (`index-pill`) 即可觸發 `set_sequence_index`，將下一個要貼上的目標 (`current_index`) 直接切換至該卡片。
+
 ---
 
 ## 2. 進行中與近期規劃待辦 (Active & Upcoming Tasks)
-
-### Phase 6：使用者體驗優化與卡片微調操作 (`v0.0.7` 規劃中)
-- [ ] **卡片懸停快捷工具列 (Item Action Toolbar)**：在卡片右側或懸停時，顯示微型「編輯 (`Edit`)」與「刪除 (`Trash`)」按鈕，方便即時微調單筆文字內容或剔除不需要的歷史紀錄。
-- [ ] **雙螢幕與 DPI 解析度適應驗證**：測試及優化主視窗在跨越 Retina 主螢幕與外接高解析度螢幕時，Pointer Events 游標座標轉換與 `floating-ghost` 渲染的精準度。
-- [ ] **手動單擊卡片跳轉指標 (Jump to Item)**：允許點擊任一卡片的序號標籤 (`index-pill`)，將下一個要貼上的目標 (`current_index`) 直接指定至該卡片。
 
 ### Phase 7：跨平台發布與 GitHub Actions CI/CD (`v1.0.0`)
 - [ ] **Release 打包發布**：建立 GitHub Release 標籤 (`v0.0.6` / `v1.0.0`)，並上傳封裝好的 macOS `.app` / `.dmg` 安裝包。

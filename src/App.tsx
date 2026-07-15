@@ -7,7 +7,10 @@ import {
   Trash2,
   Keyboard,
   ClipboardList,
-  GripVertical
+  GripVertical,
+  Pencil,
+  Check,
+  X
 } from 'lucide-react';
 import { type Language, translations } from './locales';
 
@@ -48,6 +51,8 @@ export default function App() {
   const [dragCoords, setDragCoords] = useState<{ x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [draggedWidth, setDraggedWidth] = useState<number>(300);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string>('');
   const draggedIndexRef = useRef<number | null>(null);
   const lastDragEndTimeRef = useRef<number>(0);
 
@@ -130,6 +135,51 @@ export default function App() {
     } catch (e) {
       console.error(e);
       invoke('log_debug', { msg: `handleReorder error: ${e}` });
+    }
+  };
+
+  const handleDeleteItem = async (id: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      const res = await invoke<SequenceState>('delete_sequence_item', { id });
+      setState(res);
+      if (editingId === id) setEditingId(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleStartEdit = (item: ClipboardItem, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingId(item.id);
+    setEditContent(item.content);
+  };
+
+  const handleCancelEdit = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setEditingId(null);
+    setEditContent('');
+  };
+
+  const handleSaveEdit = async (id: string, e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!editContent.trim()) return;
+    try {
+      const res = await invoke<SequenceState>('update_sequence_item', { id, content: editContent });
+      setState(res);
+      setEditingId(null);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -238,14 +288,15 @@ export default function App() {
             const isActive = index === state.current_index;
             const isDragging = draggedIndex === index;
             const isDragOver = dragOverIndex === index && draggedIndex !== index;
+            const isEditing = editingId === item.id;
 
             return (
               <div
                 key={item.id}
                 data-index={index}
-                className={`queue-item ${isActive ? 'active' : ''} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
+                className={`queue-item ${isActive ? 'active' : ''} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''} ${isEditing ? 'editing' : ''}`}
                 onClick={(e) => {
-                  if (draggedIndexRef.current !== null || Date.now() - lastDragEndTimeRef.current < 300) {
+                  if (isEditing || draggedIndexRef.current !== null || Date.now() - lastDragEndTimeRef.current < 300) {
                     e.preventDefault();
                     e.stopPropagation();
                     return;
@@ -256,19 +307,24 @@ export default function App() {
                     handleSetIndex(index);
                   }
                 }}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: isEditing ? 'default' : 'pointer' }}
               >
                 <div className="item-left">
                   <span
                     className="drag-handle"
-                    title="拖曳調整順序 / Drag to reorder"
+                    title={t.dragHint}
                     onPointerDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      if (editingId !== null) return;
+
+                      const handleEl = e.currentTarget as HTMLElement;
+                      handleEl.setPointerCapture(e.pointerId);
+
                       draggedIndexRef.current = index;
                       setDraggedIndex(index);
 
-                      const cardEl = (e.target as HTMLElement).closest('.queue-item') as HTMLElement | null;
+                      const cardEl = handleEl.closest('.queue-item') as HTMLElement | null;
                       if (cardEl) {
                         const rect = cardEl.getBoundingClientRect();
                         setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
@@ -293,9 +349,15 @@ export default function App() {
                         }
                       };
 
-                      const handlePointerUp = async (upEvent: PointerEvent) => {
+                      const handlePointerEnd = async (upEvent: PointerEvent) => {
+                        try {
+                          handleEl.releasePointerCapture(upEvent.pointerId);
+                        } catch (err) {
+                          // Ignore if capture was already lost
+                        }
                         window.removeEventListener('pointermove', handlePointerMove);
-                        window.removeEventListener('pointerup', handlePointerUp);
+                        window.removeEventListener('pointerup', handlePointerEnd);
+                        window.removeEventListener('pointercancel', handlePointerEnd);
 
                         const fromIdx = draggedIndexRef.current;
                         const el = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
@@ -308,7 +370,7 @@ export default function App() {
                           }
                         }
 
-                        invoke('log_debug', { msg: `PointerUp: fromIdx=${fromIdx}, toIdx=${toIdx}` });
+                        invoke('log_debug', { msg: `PointerEnd: fromIdx=${fromIdx}, toIdx=${toIdx}` });
 
                         lastDragEndTimeRef.current = Date.now();
                         draggedIndexRef.current = null;
@@ -328,15 +390,69 @@ export default function App() {
                       };
 
                       window.addEventListener('pointermove', handlePointerMove);
-                      window.addEventListener('pointerup', handlePointerUp);
+                      window.addEventListener('pointerup', handlePointerEnd);
+                      window.addEventListener('pointercancel', handlePointerEnd);
                     }}
                   >
                     <GripVertical size={16} />
                   </span>
-                  <span className="index-pill">{index + 1}</span>
-                  <span className="item-content">{item.content}</span>
+                  <span
+                    className="index-pill clickable-pill"
+                    title={t.jumpToItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (draggedIndexRef.current !== null) return;
+                      handleSetIndex(index);
+                    }}
+                  >
+                    {index + 1}
+                  </span>
+                  {isEditing ? (
+                    <div className="edit-input-group" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        className="edit-input"
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit(item.id, e as any);
+                          if (e.key === 'Escape') handleCancelEdit(e as any);
+                        }}
+                        autoFocus
+                      />
+                      <button className="action-btn save-btn" title={t.saveEdit} onClick={(e) => handleSaveEdit(item.id, e)}>
+                        <Check size={14} />
+                      </button>
+                      <button className="action-btn cancel-btn" title={t.cancelEdit} onClick={(e) => handleCancelEdit(e)}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="item-content" title={item.content}>{item.content}</span>
+                  )}
                 </div>
-                {isActive && <span className="next-badge">{t.nextBadge}</span>}
+
+                {!isEditing && (
+                  <div className="item-right">
+                    {isActive && <span className="next-badge">{t.nextBadge}</span>}
+                    <div className="item-actions" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="action-btn edit-btn"
+                        title={t.editItem}
+                        onClick={(e) => handleStartEdit(item, e)}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        className="action-btn delete-btn"
+                        title={t.deleteItem}
+                        onClick={(e) => handleDeleteItem(item.id, e)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })
