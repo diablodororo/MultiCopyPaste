@@ -310,6 +310,11 @@ body {
   opacity: 0.4;
   transform: scale(0.98);
   border: 1px dashed var(--accent-color);
+  pointer-events: none !important;
+}
+
+.queue-item.dragging * {
+  pointer-events: none !important;
 }
 
 .queue-item.drag-over {
@@ -324,6 +329,11 @@ body {
   cursor: grabbing;
   opacity: 0.95;
   transition: none !important;
+  pointer-events: none !important;
+}
+
+.queue-item.floating-ghost * {
+  pointer-events: none !important;
 }
 
 .queue-item * {

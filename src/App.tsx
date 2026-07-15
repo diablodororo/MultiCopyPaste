@@ -336,14 +336,17 @@ export default function App() {
 
                       const handlePointerMove = (moveEvent: PointerEvent) => {
                         setDragCoords({ x: moveEvent.clientX, y: moveEvent.clientY });
-                        const el = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
-                        const itemEl = el?.closest('.queue-item');
-                        if (itemEl) {
-                          const idxStr = itemEl.getAttribute('data-index');
-                          if (idxStr !== null) {
-                            const targetIdx = parseInt(idxStr, 10);
-                            if (!isNaN(targetIdx) && targetIdx !== draggedIndexRef.current) {
-                              setDragOverIndex(targetIdx);
+                        const elements = document.elementsFromPoint(moveEvent.clientX, moveEvent.clientY);
+                        for (const el of elements) {
+                          const itemEl = el.closest('.queue-item');
+                          if (itemEl && !itemEl.classList.contains('floating-ghost') && !itemEl.classList.contains('dragging')) {
+                            const idxStr = itemEl.getAttribute('data-index');
+                            if (idxStr !== null) {
+                              const targetIdx = parseInt(idxStr, 10);
+                              if (!isNaN(targetIdx) && targetIdx !== draggedIndexRef.current) {
+                                setDragOverIndex(targetIdx);
+                                break;
+                              }
                             }
                           }
                         }
@@ -360,13 +363,19 @@ export default function App() {
                         window.removeEventListener('pointercancel', handlePointerEnd);
 
                         const fromIdx = draggedIndexRef.current;
-                        const el = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
-                        const itemEl = el?.closest('.queue-item');
                         let toIdx = dragOverIndex;
-                        if (itemEl) {
-                          const idxStr = itemEl.getAttribute('data-index');
-                          if (idxStr !== null && !isNaN(parseInt(idxStr, 10))) {
-                            toIdx = parseInt(idxStr, 10);
+                        const elements = document.elementsFromPoint(upEvent.clientX, upEvent.clientY);
+                        for (const el of elements) {
+                          const itemEl = el.closest('.queue-item');
+                          if (itemEl && !itemEl.classList.contains('floating-ghost') && !itemEl.classList.contains('dragging')) {
+                            const idxStr = itemEl.getAttribute('data-index');
+                            if (idxStr !== null && !isNaN(parseInt(idxStr, 10))) {
+                              const targetIdx = parseInt(idxStr, 10);
+                              if (targetIdx !== fromIdx) {
+                                toIdx = targetIdx;
+                                break;
+                              }
+                            }
                           }
                         }
 
