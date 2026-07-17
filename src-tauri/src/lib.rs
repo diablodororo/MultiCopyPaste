@@ -10,6 +10,8 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
+#[cfg(target_os = "macos")]
+use tauri_nspanel::panel_delegate;
 
 #[tauri::command]
 fn log_debug(msg: String) {
@@ -141,18 +143,9 @@ fn ensure_accessibility_permission() {
     }
 }
 
-/// Toggles the quick-settings panel. When an anchor point (tray click) is
-/// given the panel opens next to it, clamped to the monitor; otherwise it is
-/// centered on screen.
-fn toggle_quick_panel(app: &AppHandle, anchor: Option<(f64, f64)>) {
-    let Some(panel) = app.get_webview_window("quickset") else {
-        return;
-    };
-    if panel.is_visible().unwrap_or(false) {
-        let _ = panel.hide();
-        return;
-    }
-
+/// Positions the quick-settings panel next to the anchor point (tray click),
+/// clamped to the monitor; without an anchor it is centered on screen.
+fn position_quick_panel(panel: &tauri::WebviewWindow, anchor: Option<(f64, f64)>) {
     if let Some((anchor_x, anchor_y)) = anchor {
         let size = panel
             .outer_size()
@@ -161,9 +154,9 @@ fn toggle_quick_panel(app: &AppHandle, anchor: Option<(f64, f64)>) {
         // Menu bar tray sits at the top of the screen (open downward);
         // a taskbar tray sits at the bottom (open upward).
         let mut y = if anchor_y < 400.0 {
-            anchor_y + 12.0
+            anchor_y + 8.0
         } else {
-            anchor_y - size.height as f64 - 12.0
+            anchor_y - size.height as f64 - 8.0
         };
         if let Ok(Some(monitor)) = panel.current_monitor() {
             let m_pos = monitor.position();
@@ -180,8 +173,37 @@ fn toggle_quick_panel(app: &AppHandle, anchor: Option<(f64, f64)>) {
     } else {
         let _ = panel.center();
     }
-    let _ = panel.show();
-    let _ = panel.set_focus();
+}
+
+/// Toggles the quick-settings popover. On macOS the window is backed by a
+/// non-activating NSPanel so it behaves like a real menu bar popover: the
+/// frontmost app keeps focus, and clicking anywhere else dismisses it.
+fn toggle_quick_panel(app: &AppHandle, anchor: Option<(f64, f64)>) {
+    let Some(window) = app.get_webview_window("quickset") else {
+        return;
+    };
+
+    #[cfg(target_os = "macos")]
+    {
+        use tauri_nspanel::ManagerExt as _;
+        if let Ok(panel) = app.get_webview_panel("quickset") {
+            if panel.is_visible() {
+                panel.order_out(None);
+            } else {
+                position_quick_panel(&window, anchor);
+                panel.show();
+            }
+            return;
+        }
+    }
+
+    if window.is_visible().unwrap_or(false) {
+        let _ = window.hide();
+    } else {
+        position_quick_panel(&window, anchor);
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
 }
 
 #[tauri::command]
@@ -197,9 +219,14 @@ pub fn run() {
     let app_state = AppState::new();
     let monitor = Arc::new(ClipboardMonitor::new());
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .manage(app_state.clone())
-        .manage(monitor.clone())
+        .manage(monitor.clone());
+
+    #[cfg(target_os = "macos")]
+    let builder = builder.plugin(tauri_nspanel::init());
+
+    builder
         .invoke_handler(tauri::generate_handler![
             log_debug,
             get_sequence_state,
@@ -285,7 +312,39 @@ pub fn run() {
 
             let _tray = tray_builder.build(app.handle())?;
 
-            // Quick-settings panel dismisses itself when it loses focus
+            // Turn the quick-settings window into a real menu bar popover:
+            // a non-activating NSPanel above the menu bar, visible on every
+            // space, dismissed as soon as it loses key status.
+            #[cfg(target_os = "macos")]
+            if let Some(window) = app.get_webview_window("quickset") {
+                use tauri_nspanel::cocoa::appkit::NSWindowCollectionBehavior;
+                use tauri_nspanel::WebviewWindowExt as _;
+
+                let panel = window.to_panel()?;
+                const NS_WINDOW_STYLE_MASK_NON_ACTIVATING_PANEL: i32 = 1 << 7;
+                const NS_MAIN_MENU_WINDOW_LEVEL: i32 = 24;
+                panel.set_level(NS_MAIN_MENU_WINDOW_LEVEL + 1);
+                panel.set_style_mask(NS_WINDOW_STYLE_MASK_NON_ACTIVATING_PANEL);
+                panel.set_collection_behaviour(
+                    NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces
+                        | NSWindowCollectionBehavior::NSWindowCollectionBehaviorStationary
+                        | NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary,
+                );
+
+                let delegate = panel_delegate!(QuickPanelDelegate {
+                    window_did_resign_key
+                });
+                let panel_for_hide = panel.clone();
+                delegate.set_listener(Box::new(move |delegate_name: String| {
+                    if delegate_name.as_str() == "window_did_resign_key" {
+                        panel_for_hide.order_out(None);
+                    }
+                }));
+                panel.set_delegate(delegate);
+            }
+
+            // Non-macOS: plain window that dismisses itself when it loses focus
+            #[cfg(not(target_os = "macos"))]
             if let Some(panel) = app.get_webview_window("quickset") {
                 let panel_handle = panel.clone();
                 panel.on_window_event(move |event| {

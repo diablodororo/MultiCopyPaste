@@ -89,8 +89,10 @@ export default function QuickPanel(): ReactElement {
     void getCurrentWebviewWindow().hide();
   };
 
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
+
   return (
-    <div className="quick-panel">
+    <div className={`quick-panel ${isMac ? 'popover-top' : ''}`}>
       <div className="quick-panel-header">
         <SlidersHorizontal size={13} />
         <span>{t.quickPanelTitle}</span>

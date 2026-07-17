@@ -246,6 +246,7 @@ body {
 }
 
 .quick-panel {
+  position: relative;
   margin: 6px;
   padding: 14px 16px 16px;
   background: rgba(15, 20, 34, 0.92);
@@ -257,6 +258,24 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* Popover arrow pointing up at the menu bar icon (macOS) */
+.quick-panel.popover-top {
+  margin-top: 14px;
+}
+
+.quick-panel.popover-top::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: rgb(17, 22, 36);
+  border-left: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-color);
 }
 
 .quick-panel-header {

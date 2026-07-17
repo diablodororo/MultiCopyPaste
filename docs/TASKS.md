@@ -56,6 +56,10 @@
 - [x] **貼上診斷 log**：`trigger_paste` 記錄佇列空、剪貼簿寫入失敗與按鍵注入事件，便於區分權限問題與佇列狀態問題。
 - [x] **下載安裝文件 (Gatekeeper)**：README 新增「下載與安裝」章節——macOS 未公證安裝包顯示「已損壞」的 `xattr -cr` 解法、輔助使用權限授權步驟、Windows SmartScreen 說明；Release 說明同步附上。
 
+### Phase 10：選單列原生 Popover 體驗 (`v0.0.10`)
+- [x] **快速設定改為真 Popover**：整合 `tauri-nspanel`，quickset 視窗轉為 non-activating `NSPanel`（`NSMainMenuWindowLevel+1`、全 Space 顯示）——點擊選單列圖示直接浮出、不再搶走當前 app 焦點（選單列不切換）、點擊面板外任意處（resign key）即自動收起，並加上指向圖示的 popover 箭頭。
+- [x] **Windows 維持原行為**：非 macOS 平台沿用一般視窗 + 失焦隱藏（`tauri-nspanel` 為 macOS 專屬依賴，以 cfg 隔離）。
+
 ---
 
 ## 2. 進行中與近期規劃待辦 (Active & Upcoming Tasks)
