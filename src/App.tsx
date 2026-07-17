@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { getVersion } from '@tauri-apps/api/app';
 import {
   Copy,
   RotateCcw,
@@ -43,6 +44,14 @@ export default function App() {
   });
 
   const t = translations[lang];
+
+  // App version comes from tauri.conf.json at runtime so it can never drift
+  const [appVersion, setAppVersion] = useState<string>('');
+  useEffect(() => {
+    getVersion()
+      .then((v) => setAppVersion(`v${v}`))
+      .catch(console.error);
+  }, []);
 
   const [state, setState] = useState<SequenceState>({
     target_length: 3,
@@ -221,7 +230,7 @@ export default function App() {
         </div>
 
         <div className="header-right">
-          <span className="version-pill">{t.appVersion}</span>
+          <span className="version-pill">{appVersion}</span>
           <select
             className="lang-select"
             value={lang}
