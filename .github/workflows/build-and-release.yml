@@ -46,7 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.event.inputs.tag_name || github.ref_name }}
-          releaseId: ''
+          releaseName: 'MultiCopyPaste ${{ github.event.inputs.tag_name || github.ref_name }}'
           releaseBody: 'See full release notes on GitHub.'
           releaseDraft: false
           prerelease: false
