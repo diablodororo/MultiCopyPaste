@@ -24,7 +24,7 @@
         "label": "quickset",
         "title": "Quick Settings",
         "width": 320,
-        "height": 268,
+        "height": 480,
         "resizable": false,
         "visible": false,
         "decorations": false,

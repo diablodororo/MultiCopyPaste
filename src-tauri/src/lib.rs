@@ -89,18 +89,99 @@ fn manual_paste_next(
 
 struct TrayMenuItems {
     show: MenuItem<tauri::Wry>,
+    settings: MenuItem<tauri::Wry>,
     quit: MenuItem<tauri::Wry>,
 }
 
 #[tauri::command]
 fn set_ui_language(lang: String, menu_items: State<'_, TrayMenuItems>) {
-    let (show_text, quit_text) = if lang == "en" {
-        ("Show Main Window", "Quit")
+    let (show_text, settings_text, quit_text) = if lang == "en" {
+        ("Show Main Window", "Quick Settings", "Quit")
     } else {
-        ("顯示主視窗", "離開")
+        ("顯示主視窗", "快速設定", "離開")
     };
     let _ = menu_items.show.set_text(show_text);
+    let _ = menu_items.settings.set_text(settings_text);
     let _ = menu_items.quit.set_text(quit_text);
+}
+
+/// Synthetic keyboard events are silently dropped by macOS unless the app has
+/// been granted Accessibility permission — and that grant is invalidated
+/// whenever the (ad-hoc) code signature changes, e.g. after every rebuild.
+/// Check at startup and trigger the system prompt so the failure is visible
+/// instead of pastes silently doing nothing.
+#[cfg(target_os = "macos")]
+fn ensure_accessibility_permission() {
+    use core_foundation::base::TCFType;
+    use core_foundation::boolean::CFBoolean;
+    use core_foundation::dictionary::{CFDictionary, CFDictionaryRef};
+    use core_foundation::string::{CFString, CFStringRef};
+
+    #[link(name = "ApplicationServices", kind = "framework")]
+    extern "C" {
+        fn AXIsProcessTrustedWithOptions(options: CFDictionaryRef) -> bool;
+        static kAXTrustedCheckOptionPrompt: CFStringRef;
+    }
+
+    unsafe {
+        let key = CFString::wrap_under_get_rule(kAXTrustedCheckOptionPrompt);
+        let options = CFDictionary::from_CFType_pairs(&[(
+            key.as_CFType(),
+            CFBoolean::true_value().as_CFType(),
+        )]);
+        let trusted = AXIsProcessTrustedWithOptions(options.as_concrete_TypeRef());
+        if trusted {
+            eprintln!("[MultiCopyPaste] Accessibility permission OK");
+        } else {
+            eprintln!(
+                "[MultiCopyPaste] Accessibility permission MISSING — paste injection will not work. \
+                 Grant it in System Settings > Privacy & Security > Accessibility, then relaunch."
+            );
+        }
+    }
+}
+
+/// Toggles the quick-settings panel. When an anchor point (tray click) is
+/// given the panel opens next to it, clamped to the monitor; otherwise it is
+/// centered on screen.
+fn toggle_quick_panel(app: &AppHandle, anchor: Option<(f64, f64)>) {
+    let Some(panel) = app.get_webview_window("quickset") else {
+        return;
+    };
+    if panel.is_visible().unwrap_or(false) {
+        let _ = panel.hide();
+        return;
+    }
+
+    if let Some((anchor_x, anchor_y)) = anchor {
+        let size = panel
+            .outer_size()
+            .unwrap_or(tauri::PhysicalSize::new(320, 460));
+        let mut x = anchor_x - size.width as f64 / 2.0;
+        // Menu bar tray sits at the top of the screen (open downward);
+        // a taskbar tray sits at the bottom (open upward).
+        let mut y = if anchor_y < 400.0 {
+            anchor_y + 12.0
+        } else {
+            anchor_y - size.height as f64 - 12.0
+        };
+        if let Ok(Some(monitor)) = panel.current_monitor() {
+            let m_pos = monitor.position();
+            let m_size = monitor.size();
+            let min_x = m_pos.x as f64 + 8.0;
+            let max_x = (m_pos.x as f64 + m_size.width as f64 - size.width as f64 - 8.0).max(min_x);
+            let min_y = m_pos.y as f64 + 8.0;
+            let max_y =
+                (m_pos.y as f64 + m_size.height as f64 - size.height as f64 - 8.0).max(min_y);
+            x = x.clamp(min_x, max_x);
+            y = y.clamp(min_y, max_y);
+        }
+        let _ = panel.set_position(tauri::PhysicalPosition::new(x, y));
+    } else {
+        let _ = panel.center();
+    }
+    let _ = panel.show();
+    let _ = panel.set_focus();
 }
 
 #[tauri::command]
@@ -146,14 +227,22 @@ pub fn run() {
             // Start clipboard monitor thread
             monitor.start_monitoring(app_state.clone(), app.handle().clone());
 
+            // Verify Accessibility permission up-front so paste failures are
+            // diagnosable instead of silent (rebuilds invalidate the grant).
+            #[cfg(target_os = "macos")]
+            ensure_accessibility_permission();
+
             // Build System Tray Icon & Menu.
             // Labels are single-language and follow the UI language via set_ui_language;
-            // quick settings live in the slider panel (left-click), not in the menu.
+            // sliders and the copied queue live in the quick-settings panel
+            // (left-click on the icon, or the menu's Quick Settings entry).
             let show_i = MenuItem::with_id(app.handle(), "show", "顯示主視窗", true, None::<&str>)?;
+            let settings_i = MenuItem::with_id(app.handle(), "settings", "快速設定", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app.handle(), "quit", "離開", true, None::<&str>)?;
-            let tray_menu = Menu::with_items(app.handle(), &[&show_i, &quit_i])?;
+            let tray_menu = Menu::with_items(app.handle(), &[&settings_i, &show_i, &quit_i])?;
             app.manage(TrayMenuItems {
                 show: show_i,
+                settings: settings_i,
                 quit: quit_i,
             });
 
@@ -167,13 +256,16 @@ pub fn run() {
                             let _ = window.set_focus();
                         }
                     }
+                    "settings" => {
+                        toggle_quick_panel(app, None);
+                    }
                     "quit" => {
                         app.exit(0);
                     }
                     _ => {}
                 })
                 .on_tray_icon_event(|tray: &TrayIcon, event| {
-                    // Left-click toggles the quick-settings slider panel anchored to the tray icon
+                    // Left-click toggles the quick-settings panel anchored to the tray icon
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
                         button_state: MouseButtonState::Up,
@@ -181,27 +273,7 @@ pub fn run() {
                         ..
                     } = event
                     {
-                        let app = tray.app_handle();
-                        if let Some(panel) = app.get_webview_window("quickset") {
-                            if panel.is_visible().unwrap_or(false) {
-                                let _ = panel.hide();
-                            } else {
-                                let size = panel
-                                    .outer_size()
-                                    .unwrap_or(tauri::PhysicalSize::new(320, 268));
-                                let x = (position.x - size.width as f64 / 2.0).max(8.0);
-                                // Menu bar tray sits at the top of the screen (open downward);
-                                // a taskbar tray sits at the bottom (open upward).
-                                let y = if position.y < 400.0 {
-                                    position.y + 12.0
-                                } else {
-                                    position.y - size.height as f64 - 12.0
-                                };
-                                let _ = panel.set_position(tauri::PhysicalPosition::new(x, y));
-                                let _ = panel.show();
-                                let _ = panel.set_focus();
-                            }
-                        }
+                        toggle_quick_panel(tray.app_handle(), Some((position.x, position.y)));
                     }
                 });
 

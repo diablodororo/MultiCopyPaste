@@ -89,7 +89,11 @@ impl ClipboardMonitor {
     }
 
     pub fn trigger_paste(&self, app_state: AppState, app_handle: AppHandle) {
-        if let Some(item) = app_state.advance_and_get_paste() {
+        let advanced = app_state.advance_and_get_paste();
+        if advanced.is_none() {
+            eprintln!("[paste] queue empty — nothing to paste");
+        }
+        if let Some(item) = advanced {
             // Emit updated sequence to UI
             let state = app_state.get_state();
             let _ = app_handle.emit("sequence-updated", state);
@@ -113,9 +117,15 @@ impl ClipboardMonitor {
                 // Update last_text before the clipboard so the polling monitor never
                 // observes the pasted content ahead of the dedup marker.
                 *last_text.lock() = item.content.clone();
-                if let Ok(mut cb) = Clipboard::new() {
-                    let _ = cb.set_text(item.content.clone());
+                match Clipboard::new() {
+                    Ok(mut cb) => {
+                        if let Err(e) = cb.set_text(item.content.clone()) {
+                            eprintln!("[paste] failed to write clipboard: {}", e);
+                        }
+                    }
+                    Err(e) => eprintln!("[paste] failed to open clipboard: {}", e),
                 }
+                eprintln!("[paste] injecting keystroke ({} chars)", item.content.len());
                 // Give the pasteboard a moment to settle before the keystroke lands.
                 thread::sleep(Duration::from_millis(30));
 
