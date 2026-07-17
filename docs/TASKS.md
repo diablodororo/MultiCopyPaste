@@ -46,7 +46,7 @@
 - [x] **前端輪次 UI 與 i18n**：設定面板新增輪次 stepper、佇列標題顯示目前輪次徽章，中英文案同步補齊。
 - [x] **循環不變量測試**：新增 1 輪 / 3 輪自動清空與無限循環的 Rust 單元測試，並確保所有佇列變動路徑正確重置 `current_loop`。
 
-### Phase 9：貼上穩定性與托盤快速設定面板 (`v0.0.9` 準備中)
+### Phase 9：貼上穩定性與托盤快速設定面板 (`v0.0.9`)
 - [x] **快捷鍵貼上穩定性修正**：改為輪詢等待實體修飾鍵（Ctrl/Option/Shift/Cmd）全數釋放後才注入合成 Cmd+V（上限 600ms）；「寫入剪貼簿 → 送出按鍵」以 paste lock 序列化為原子操作，杜絕連按時貼錯內容或漏貼。
 - [x] **托盤選單單語化 (i18n)**：選單文字由前端透過 `set_ui_language` 命令同步，跟隨介面語言即時切換繁中/英文，不再雙語並列。
 - [x] **托盤快速設定滑桿面板**：左鍵點擊托盤圖示彈出貼齊選單列的迷你面板（無邊框、失焦自動收起、Esc 關閉），以拉桿即時調整「序列循環長度」與「重複貼上循環次數」（最右為無限循環）；原生子選單移除。
@@ -54,12 +54,13 @@
 - [x] **Accessibility 權限自檢**：啟動時以 `AXIsProcessTrustedWithOptions` 檢查輔助使用權限並觸發系統授權提示——重建後簽章改變導致權限被 macOS 撤銷時，貼上會靜默失效，現在會在啟動 log 與系統對話框中顯性回報。
 - [x] **快速設定面板顯示複製佇列**：面板加入目前佇列內容清單（序號、NEXT 指標、單行省略預覽），點擊可直接跳轉下一個貼上目標；右鍵選單新增「快速設定」入口，面板定位加入螢幕邊界 clamp。
 - [x] **貼上診斷 log**：`trigger_paste` 記錄佇列空、剪貼簿寫入失敗與按鍵注入事件，便於區分權限問題與佇列狀態問題。
+- [x] **下載安裝文件 (Gatekeeper)**：README 新增「下載與安裝」章節——macOS 未公證安裝包顯示「已損壞」的 `xattr -cr` 解法、輔助使用權限授權步驟、Windows SmartScreen 說明；Release 說明同步附上。
 
 ---
 
 ## 2. 進行中與近期規劃待辦 (Active & Upcoming Tasks)
 
 ### Phase 8：跨平台發布與 GitHub Actions CI/CD (`v1.0.0`)
-- [x] **Release 打包發布**：建立 GitHub Release 標籤（最新 `v0.0.8`），由 GitHub Actions (`build-and-release.yml`) 自動建置並上傳 macOS `.dmg` 與 Windows 安裝包。
+- [x] **Release 打包發布**：建立 GitHub Release 標籤（最新 `v0.0.9`），由 GitHub Actions (`build-and-release.yml`) 自動建置並上傳 macOS `.dmg` 與 Windows 安裝包。
 - [ ] **Windows 環境相容性最後測試**：驗證 Windows 平台下的 `enigo` 貼上模擬以及托盤常駐行為是否在最新 Win11 / Win10 環境完美運作。
 - [ ] **設定匯出/匯入 (`Backup & Restore`)**：提供使用者把當前常用序列或自訂快捷鍵設定導出為 JSON 備份檔的功能。

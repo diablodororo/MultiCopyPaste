@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Tag name for release (e.g. v0.0.8)'
+        description: 'Tag name for release (e.g. v0.0.9)'
         required: false
-        default: 'v0.0.8'
+        default: 'v0.0.9'
 
 jobs:
   build-and-release:
@@ -47,7 +47,18 @@ jobs:
         with:
           tagName: ${{ github.event.inputs.tag_name || github.ref_name }}
           releaseName: 'MultiCopyPaste ${{ github.event.inputs.tag_name || github.ref_name }}'
-          releaseBody: 'See full release notes on GitHub.'
+          releaseBody: |
+            ## 📥 安裝說明 / Install Notes
+
+            **macOS**：下載的 App 若顯示「已損壞，無法打開」，這是 Gatekeeper 對未公證 App 的攔截（檔案並未損壞）。將 App 拖入「應用程式」後，在終端機執行：
+            ```
+            xattr -cr /Applications/MultiCopyPaste.app
+            ```
+            首次啟動請依系統提示，於「系統設定 → 隱私權與安全性 → 輔助使用」授權 MultiCopyPaste（依序貼上功能必需）。升級後若貼上失效，請移除清單中的舊項目後重新加入。
+
+            **macOS**: If the downloaded app says it "is damaged and can't be opened", that's Gatekeeper blocking a non-notarized app (the file is fine). After dragging it into Applications, run `xattr -cr /Applications/MultiCopyPaste.app` in Terminal. On first launch, grant the Accessibility permission (System Settings → Privacy & Security → Accessibility) — required for sequential paste.
+
+            **Windows**: If SmartScreen appears, click "More info → Run anyway".
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

@@ -30,14 +30,14 @@ In daily data entry, spreadsheet transfers, or form filling, we often repeatedly
 - 🛡️ **Native OS Stability**：
   - **macOS**：Uses Apple native CoreGraphics `CGEvent` and lock-free queues for 100% thread safety without crashes.
   - **Windows**：Injects standard virtual key `VK_V` (`Key::V`) with `Control` for 100% compatibility across Win32, Office, WPF, Electron, and terminals.
-- 🌟 **System Tray Resident & Quick Settings**：Quickly change "Sequence Cycle Length" and "Repeat Paste Cycles" right from the top menu bar (macOS) or system tray menu (Windows) without opening the main window.
+- 🌟 **Quick Settings Panel in the Menu Bar**：Left-click the menu bar (macOS) / tray (Windows) icon to pop up a mini panel — adjust sequence length and repeat cycles with sliders, and see the current copied queue inline (with the `NEXT` badge; click any item to make it the next paste target). The right-click menu follows the UI language.
 - 🎨 **Sleek Modern UI**：Dark theme with glassmorphism styling, live cycle previews, and a glowing `NEXT` indicator badge.
 
 ---
 
 ## ⌨️ How to Use & Shortcuts
 
-1. **Launch App**：Start `MultiCopyPaste`. It will run quietly in the background monitoring your clipboard.
+1. **Launch App**：Start `MultiCopyPaste`. It will run quietly in the background monitoring your clipboard. On first launch, macOS asks for the Accessibility permission — sequential paste requires it.
 2. **Copy Consecutively**：In any source window, use standard `Cmd + C` / `Ctrl + C` to copy items one after another (e.g., copy `John`, then `123456`, then `john@example.com`).
 3. **Paste Sequentially**：Switch to your target input box and press **`Ctrl + Option + V` (macOS)** or **`Ctrl + Alt + V` (Windows)** repeatedly to paste the items in sequence!
 4. **Cycle & Auto-Clear**：Once the configured repeat count limit is reached, the queue automatically clears, ready for your next set of copies.
@@ -45,9 +45,34 @@ In daily data entry, spreadsheet transfers, or form filling, we often repeatedly
 | Action | Shortcut / Method |
 | :--- | :--- |
 | **Paste Sequentially** | `Ctrl + Option + V` (macOS) / `Ctrl + Alt + V` (Windows) |
-| **Quickly Set Length & Repeat Cycles** | Right/Left click tray icon -> Submenu "Sequence Length" or "Repeat Paste Cycles" |
+| **Quick Settings Panel (sliders + queue preview)** | Left-click the menu bar / tray icon, or right-click menu -> "Quick Settings" |
+| **Jump to a Paste Target** | Click any queue item in the quick panel or the main window |
 | **Reset Index** | Click "Reset to Top" button in the UI |
-| **Show/Hide Window** | Click top menu bar / system tray icon -> Select "Show Window" |
+| **Show/Hide Window** | Right-click the menu bar / tray icon -> Select "Show Main Window" |
+
+---
+
+## 📥 Download & Installation
+
+Grab the installer for your platform from [GitHub Releases](https://github.com/diablodororo/MultiCopyPaste/releases/latest) (macOS `.dmg` / Windows `.exe`).
+
+### macOS: ""MultiCopyPaste" is damaged and can't be opened"?
+
+This project is not enrolled in the Apple Developer Program (no notarization), so Gatekeeper quarantines downloaded builds and reports them as "damaged". The file is **not** actually damaged — remove the quarantine attribute and it runs normally:
+
+```bash
+xattr -cr /Applications/MultiCopyPaste.app
+```
+
+(Drag the app from the `.dmg` into Applications first, run the command in Terminal, then launch the app again.)
+
+### macOS: Grant the Accessibility permission
+
+On first launch a system prompt appears; enable `MultiCopyPaste` under System Settings → Privacy & Security → Accessibility. Injecting the synthetic `Cmd+V` keystroke requires it — without the grant, the paste shortcut silently does nothing. After upgrading to a new version, if pasting stops working, remove the old entry from the list and add it back.
+
+### Windows: SmartScreen warning
+
+If "Windows protected your PC" appears on first run, click "More info → Run anyway".
 
 ---
 
