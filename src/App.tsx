@@ -22,6 +22,8 @@ interface ClipboardItem {
 
 interface SequenceState {
   target_length: number;
+  repeat_count: number;
+  current_loop: number;
   current_index: number;
   items: ClipboardItem[];
   history: ClipboardItem[];
@@ -39,6 +41,8 @@ export default function App() {
 
   const [state, setState] = useState<SequenceState>({
     target_length: 3,
+    repeat_count: 1,
+    current_loop: 0,
     current_index: 0,
     items: [],
     history: [],
@@ -86,6 +90,15 @@ export default function App() {
     if (newLength < 1 || newLength > 12) return;
     try {
       const res = await invoke<SequenceState>('set_target_length', { length: newLength });
+      setState(res);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRepeatCountChange = async (newCount: number) => {
+    try {
+      const res = await invoke<SequenceState>('set_repeat_count', { count: newCount });
       setState(res);
     } catch (e) {
       console.error(e);
@@ -242,6 +255,30 @@ export default function App() {
 
         <div className="config-row">
           <div className="config-label">
+            <h3>{t.repeatCountTitle}</h3>
+            <p>{t.repeatCountDesc}</p>
+          </div>
+          <div className="stepper-group" style={{ minWidth: 220, justifyContent: 'flex-end' }}>
+            <button
+              className="stepper-btn"
+              onClick={() => handleRepeatCountChange((state.repeat_count ?? 1) === 0 ? 10 : (state.repeat_count ?? 1) - 1)}
+            >
+              -
+            </button>
+            <span className="stepper-value" style={{ minWidth: 110, fontSize: '0.88rem' }}>
+              {t.repeatTimes(state.repeat_count ?? 1)}
+            </span>
+            <button
+              className="stepper-btn"
+              onClick={() => handleRepeatCountChange(((state.repeat_count ?? 1) + 1) % 11)}
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <div className="config-row">
+          <div className="config-label">
             <h3>{t.shortcutTitle}</h3>
             <p>{t.shortcutDesc}</p>
           </div>
@@ -256,6 +293,11 @@ export default function App() {
       <section className="queue-header">
         <h2>
           {t.queueTitle} ({state.items.length}/{state.target_length})
+          {state.items.length > 0 && state.repeat_count > 0 && (
+            <span style={{ fontSize: '0.85rem', fontWeight: 'normal', color: 'var(--text-muted)', marginLeft: 8 }}>
+              • {t.loopBadge(state.current_loop + 1, state.repeat_count)}
+            </span>
+          )}
         </h2>
         <div className="action-buttons">
           <button className="btn-secondary" onClick={handleResetIndex} title={t.resetTop}>

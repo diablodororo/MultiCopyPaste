@@ -57,6 +57,7 @@ impl AppState {
             state.items = state.history[start_idx..].to_vec();
             // Reset index to 0 when queue updates so user starts from first item A
             state.current_index = 0;
+            state.current_loop = 0;
         }
 
         true
@@ -71,8 +72,21 @@ impl AppState {
         let idx = state.current_index;
         let item = state.items.get(idx).cloned();
 
-        if !state.items.is_empty() {
-            state.current_index = (state.current_index + 1) % state.items.len();
+        let items_len = state.items.len();
+        if items_len > 0 {
+            let next_index = (state.current_index + 1) % items_len;
+            if next_index == 0 {
+                state.current_loop += 1;
+            }
+
+            if state.repeat_count > 0 && state.current_loop >= state.repeat_count {
+                state.history.clear();
+                state.items.clear();
+                state.current_index = 0;
+                state.current_loop = 0;
+            } else {
+                state.current_index = next_index;
+            }
         }
 
         item
@@ -81,6 +95,7 @@ impl AppState {
     pub fn reset_index(&self) {
         let mut state = self.inner.lock();
         state.current_index = 0;
+        state.current_loop = 0;
     }
 
     pub fn set_sequence_index(&self, index: usize) -> SequenceState {
@@ -90,6 +105,7 @@ impl AppState {
         } else {
             state.current_index = 0;
         }
+        state.current_loop = 0;
         state.clone()
     }
 
@@ -106,6 +122,14 @@ impl AppState {
             state.items = state.history[start_idx..].to_vec();
         }
         state.current_index = 0;
+        state.current_loop = 0;
+        state.clone()
+    }
+
+    pub fn set_repeat_count(&self, count: usize) -> SequenceState {
+        let mut state = self.inner.lock();
+        state.repeat_count = count;
+        state.current_loop = 0;
         state.clone()
     }
 
@@ -163,6 +187,7 @@ impl AppState {
         state.history.clear();
         state.items.clear();
         state.current_index = 0;
+        state.current_loop = 0;
         state.clone()
     }
 
@@ -257,6 +282,7 @@ mod tests {
     #[test]
     fn advance_cycles_in_queue_order() {
         let state = AppState::new();
+        state.set_repeat_count(0);
         record(&state, "A");
         record(&state, "B");
         record(&state, "C");
@@ -267,6 +293,42 @@ mod tests {
 
         assert_eq!(pasted, vec!["A", "B", "C", "A"]);
         assert_eq!(state.get_state().current_index, 1);
+    }
+
+    #[test]
+    fn advance_clears_queue_after_repeat_count_1_loop() {
+        let state = AppState::new();
+        record(&state, "A");
+        record(&state, "B");
+        record(&state, "C");
+        assert_eq!(state.get_state().repeat_count, 1);
+
+        assert_eq!(state.advance_and_get_paste().unwrap().content, "A");
+        assert_eq!(state.advance_and_get_paste().unwrap().content, "B");
+        assert_eq!(state.advance_and_get_paste().unwrap().content, "C");
+
+        assert!(state.advance_and_get_paste().is_none());
+        assert!(state.get_state().items.is_empty());
+        assert!(state.get_state().history.is_empty());
+    }
+
+    #[test]
+    fn advance_clears_queue_after_repeat_count_3_loops() {
+        let state = AppState::new();
+        state.set_repeat_count(3);
+        record(&state, "X");
+        record(&state, "Y");
+
+        for loop_idx in 1..=3 {
+            assert_eq!(state.advance_and_get_paste().unwrap().content, "X");
+            assert_eq!(state.advance_and_get_paste().unwrap().content, "Y");
+            if loop_idx < 3 {
+                assert_eq!(state.get_state().current_loop, loop_idx);
+            }
+        }
+
+        assert!(state.advance_and_get_paste().is_none());
+        assert!(state.get_state().items.is_empty());
     }
 
     #[test]

@@ -6,7 +6,7 @@ use clipboard::ClipboardMonitor;
 use models::{ClipboardItem, SequenceState};
 use state::AppState;
 use std::sync::Arc;
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::{Menu, MenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
@@ -24,6 +24,13 @@ fn get_sequence_state(state: State<'_, AppState>) -> SequenceState {
 #[tauri::command]
 fn set_target_length(length: usize, state: State<'_, AppState>, app: AppHandle) -> SequenceState {
     let new_state = state.set_target_length(length);
+    let _ = app.emit("sequence-updated", new_state.clone());
+    new_state
+}
+
+#[tauri::command]
+fn set_repeat_count(count: usize, state: State<'_, AppState>, app: AppHandle) -> SequenceState {
+    let new_state = state.set_repeat_count(count);
     let _ = app.emit("sequence-updated", new_state.clone());
     new_state
 }
@@ -92,6 +99,7 @@ pub fn run() {
             log_debug,
             get_sequence_state,
             set_target_length,
+            set_repeat_count,
             reset_sequence_index,
             set_sequence_index,
             update_sequence_items,
@@ -115,12 +123,38 @@ pub fn run() {
             // Build System Tray Icon & Menu
             let show_i = MenuItem::with_id(app.handle(), "show", "顯示視窗 / Show Window", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app.handle(), "quit", "離開 / Quit", true, None::<&str>)?;
-            let tray_menu = Menu::with_items(app.handle(), &[&show_i, &quit_i])?;
 
+            let target_len_2 = MenuItem::with_id(app.handle(), "target_len_2", "2 筆 / 2 Items", true, None::<&str>)?;
+            let target_len_3 = MenuItem::with_id(app.handle(), "target_len_3", "3 筆 / 3 Items", true, None::<&str>)?;
+            let target_len_5 = MenuItem::with_id(app.handle(), "target_len_5", "5 筆 / 5 Items", true, None::<&str>)?;
+            let target_len_10 = MenuItem::with_id(app.handle(), "target_len_10", "10 筆 / 10 Items", true, None::<&str>)?;
+            let target_len_20 = MenuItem::with_id(app.handle(), "target_len_20", "20 筆 / 20 Items", true, None::<&str>)?;
+            let submenu_target_len = Submenu::with_items(
+                app.handle(),
+                "序列循環長度 / Sequence Length",
+                true,
+                &[&target_len_2, &target_len_3, &target_len_5, &target_len_10, &target_len_20],
+            )?;
+
+            let repeat_1 = MenuItem::with_id(app.handle(), "repeat_1", "1 次 (貼完清空) / 1 Time (Clear after paste)", true, None::<&str>)?;
+            let repeat_2 = MenuItem::with_id(app.handle(), "repeat_2", "2 次 / 2 Times", true, None::<&str>)?;
+            let repeat_3 = MenuItem::with_id(app.handle(), "repeat_3", "3 次 / 3 Times", true, None::<&str>)?;
+            let repeat_5 = MenuItem::with_id(app.handle(), "repeat_5", "5 次 / 5 Times", true, None::<&str>)?;
+            let repeat_0 = MenuItem::with_id(app.handle(), "repeat_0", "無限循環 (不清空) / Infinite (No clear)", true, None::<&str>)?;
+            let submenu_repeat = Submenu::with_items(
+                app.handle(),
+                "重複貼上循環次數 / Repeat Paste Cycles",
+                true,
+                &[&repeat_1, &repeat_2, &repeat_3, &repeat_5, &repeat_0],
+            )?;
+
+            let tray_menu = Menu::with_items(app.handle(), &[&show_i, &submenu_target_len, &submenu_repeat, &quit_i])?;
+
+            let tray_app_state = app_state.clone();
             let mut tray_builder = TrayIconBuilder::new()
                 .menu(&tray_menu)
                 .show_menu_on_left_click(true)
-                .on_menu_event(|app: &AppHandle, event| match event.id.as_ref() {
+                .on_menu_event(move |app: &AppHandle, event| match event.id.as_ref() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
@@ -129,6 +163,46 @@ pub fn run() {
                     }
                     "quit" => {
                         app.exit(0);
+                    }
+                    "target_len_2" => {
+                        let new_state = tray_app_state.set_target_length(2);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "target_len_3" => {
+                        let new_state = tray_app_state.set_target_length(3);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "target_len_5" => {
+                        let new_state = tray_app_state.set_target_length(5);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "target_len_10" => {
+                        let new_state = tray_app_state.set_target_length(10);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "target_len_20" => {
+                        let new_state = tray_app_state.set_target_length(20);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "repeat_1" => {
+                        let new_state = tray_app_state.set_repeat_count(1);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "repeat_2" => {
+                        let new_state = tray_app_state.set_repeat_count(2);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "repeat_3" => {
+                        let new_state = tray_app_state.set_repeat_count(3);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "repeat_5" => {
+                        let new_state = tray_app_state.set_repeat_count(5);
+                        let _ = app.emit("sequence-updated", new_state);
+                    }
+                    "repeat_0" => {
+                        let new_state = tray_app_state.set_repeat_count(0);
+                        let _ = app.emit("sequence-updated", new_state);
                     }
                     _ => {}
                 })

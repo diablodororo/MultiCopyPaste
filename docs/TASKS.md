@@ -40,11 +40,17 @@
 - [x] **剪貼資料保真**：擷取、貼回與編輯流程完整保留前後空白、縮排及換行，並以多行編輯器支援程式碼與結構化文字。
 - [x] **核心狀態測試與重排防護**：為擷取、去重、循環、排序、刪除、編輯及 history 上限建立 Rust 單元測試；重排只接受既有項目的完整排列，避免錯誤 IPC payload 污染內容。
 
+### Phase 7：重複貼上循環次數與托盤快速設定 (`v0.0.8`)
+- [x] **重複貼上循環次數 (Repeat Paste Cycles)**：新增 `repeat_count` / `current_loop` 狀態，序列貼滿設定輪次後自動清空佇列與歷史（預設 1 輪），`0` 代表無限循環不清空。
+- [x] **托盤快速設定子選單**：macOS 選單列 / Windows 系統托盤新增「序列循環長度」與「重複貼上循環次數」子選單，無需開啟主視窗即可調整。
+- [x] **前端輪次 UI 與 i18n**：設定面板新增輪次 stepper、佇列標題顯示目前輪次徽章，中英文案同步補齊。
+- [x] **循環不變量測試**：新增 1 輪 / 3 輪自動清空與無限循環的 Rust 單元測試，並確保所有佇列變動路徑正確重置 `current_loop`。
+
 ---
 
 ## 2. 進行中與近期規劃待辦 (Active & Upcoming Tasks)
 
-### Phase 7：跨平台發布與 GitHub Actions CI/CD (`v1.0.0`)
-- [ ] **Release 打包發布**：建立 GitHub Release 標籤 (`v0.0.6` / `v1.0.0`)，並上傳封裝好的 macOS `.app` / `.dmg` 安裝包。
+### Phase 8：跨平台發布與 GitHub Actions CI/CD (`v1.0.0`)
+- [x] **Release 打包發布**：建立 GitHub Release 標籤（最新 `v0.0.8`），由 GitHub Actions (`build-and-release.yml`) 自動建置並上傳 macOS `.dmg` 與 Windows 安裝包。
 - [ ] **Windows 環境相容性最後測試**：驗證 Windows 平台下的 `enigo` 貼上模擬以及托盤常駐行為是否在最新 Win11 / Win10 環境完美運作。
 - [ ] **設定匯出/匯入 (`Backup & Restore`)**：提供使用者把當前常用序列或自訂快捷鍵設定導出為 JSON 備份檔的功能。

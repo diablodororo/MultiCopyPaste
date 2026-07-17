@@ -12,6 +12,8 @@ pub struct ClipboardItem {
 pub struct SequenceState {
     pub target_length: usize,
     pub current_index: usize,
+    pub repeat_count: usize,
+    pub current_loop: usize,
     pub items: Vec<ClipboardItem>,
     pub history: Vec<ClipboardItem>,
     pub shortcut: String,
@@ -23,6 +25,8 @@ impl Default for SequenceState {
         Self {
             target_length: 3,
             current_index: 0,
+            repeat_count: 1,
+            current_loop: 0,
             items: Vec::new(),
             history: Vec::new(),
             shortcut: "Ctrl+Option+V".to_string(),

@@ -26,10 +26,11 @@ In daily data entry, spreadsheet transfers, or form filling, we often repeatedly
 - ⚡ **Ultra Lightweight & Efficient**：Built on Tauri v2 + Rust with a memory footprint of only ~18–25 MB.
 - 🌐 **Internationalization (i18n)**：Instant switching between English & Traditional Chinese via top-right dropdown.
 - 🎹 **Global Shortcut**：Press `Ctrl + Option + V` (macOS) or `Ctrl + Alt + V` (Windows) to paste sequentially across any active application.
+- 🔄 **Repeat Paste Cycle & Auto-Clear**：Set how many loops to paste before automatically clearing the queue (default: 1 loop). For example, with `ABC`, setting 1 loop clears after one sequence (`ABC`); setting 3 loops allows pasting `ABCABCABC` before clearing. Infinite cycling is also supported.
 - 🛡️ **Native OS Stability**：
   - **macOS**：Uses Apple native CoreGraphics `CGEvent` and lock-free queues for 100% thread safety without crashes.
   - **Windows**：Injects standard virtual key `VK_V` (`Key::V`) with `Control` for 100% compatibility across Win32, Office, WPF, Electron, and terminals.
-- 🌟 **System Tray Resident**：Minimalist template icon on macOS adapts cleanly to light/dark menu bars; rests quietly in the Windows system tray with a quick left-click menu to show/hide.
+- 🌟 **System Tray Resident & Quick Settings**：Quickly change "Sequence Cycle Length" and "Repeat Paste Cycles" right from the top menu bar (macOS) or system tray menu (Windows) without opening the main window.
 - 🎨 **Sleek Modern UI**：Dark theme with glassmorphism styling, live cycle previews, and a glowing `NEXT` indicator badge.
 
 ---
@@ -39,12 +40,14 @@ In daily data entry, spreadsheet transfers, or form filling, we often repeatedly
 1. **Launch App**：Start `MultiCopyPaste`. It will run quietly in the background monitoring your clipboard.
 2. **Copy Consecutively**：In any source window, use standard `Cmd + C` / `Ctrl + C` to copy items one after another (e.g., copy `John`, then `123456`, then `john@example.com`).
 3. **Paste Sequentially**：Switch to your target input box and press **`Ctrl + Option + V` (macOS)** or **`Ctrl + Alt + V` (Windows)** repeatedly to paste the items in sequence!
+4. **Cycle & Auto-Clear**：Once the configured repeat count limit is reached, the queue automatically clears, ready for your next set of copies.
 
-| Action | Shortcut |
+| Action | Shortcut / Method |
 | :--- | :--- |
 | **Paste Sequentially** | `Ctrl + Option + V` (macOS) / `Ctrl + Alt + V` (Windows) |
+| **Quickly Set Length & Repeat Cycles** | Right/Left click tray icon -> Submenu "Sequence Length" or "Repeat Paste Cycles" |
 | **Reset Index** | Click "Reset to Top" button in the UI |
-| **Show/Hide Window** | Left-click top menu bar / system tray icon -> Select "Show Window" |
+| **Show/Hide Window** | Click top menu bar / system tray icon -> Select "Show Window" |
 
 ---
 
