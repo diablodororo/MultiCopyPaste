@@ -58,6 +58,10 @@
 
 ### Phase 10：選單列原生 Popover 體驗 (`v0.0.10`)
 - [x] **快速設定改為真 Popover**：整合 `tauri-nspanel`，quickset 視窗轉為 non-activating `NSPanel`（`NSMainMenuWindowLevel+1`、全 Space 顯示）——點擊選單列圖示直接浮出、不再搶走當前 app 焦點（選單列不切換）、點擊面板外任意處（resign key）即自動收起，並加上指向圖示的 popover 箭頭。
+- [x] **移除原生托盤選單**：macOS 掛載原生選單時左鍵必定展開選單（`show_menu_on_left_click(false)` 無效），導致 popover 無法觸達——選單整個移除，左右鍵點擊皆直接切換 popover，「顯示主視窗 / 離開」移入面板底部。
+- [x] **多螢幕定位修正**：`tray-icon` 在 macOS 混用邏輯座標與主螢幕實體像素高度，多螢幕下面板開到錯誤螢幕——改用 `cursor_position()` + `monitor_from_point()` 同座標系定位並以被點擊的螢幕做邊界修正。
+- [x] **📌 釘選按鈕**：popover 標題列新增釘選開關，啟用後面板常駐最上層、點擊外部與失焦不再自動收起。
+- [x] **開發期固定簽章流程**：新增 `scripts/macos-dev-install.sh`——以固定本機開發憑證簽章並部署至 `/Applications`，「輔助使用」授權跨重建持續有效，終結每次重建都要重新授權的循環。
 - [x] **Windows 維持原行為**：非 macOS 平台沿用一般視窗 + 失焦隱藏（`tauri-nspanel` 為 macOS 專屬依賴，以 cfg 隔離）。
 
 ---

@@ -30,7 +30,7 @@ In daily data entry, spreadsheet transfers, or form filling, we often repeatedly
 - 🛡️ **Native OS Stability**：
   - **macOS**：Uses Apple native CoreGraphics `CGEvent` and lock-free queues for 100% thread safety without crashes.
   - **Windows**：Injects standard virtual key `VK_V` (`Key::V`) with `Control` for 100% compatibility across Win32, Office, WPF, Electron, and terminals.
-- 🌟 **Quick Settings Panel in the Menu Bar**：Left-click the menu bar (macOS) / tray (Windows) icon to pop up a mini panel — adjust sequence length and repeat cycles with sliders, and see the current copied queue inline (with the `NEXT` badge; click any item to make it the next paste target). The right-click menu follows the UI language.
+- 🌟 **Native Menu Bar Popover**：Click the menu bar (macOS) / tray (Windows) icon — either button — and the quick-settings popover floats out instantly without stealing focus from your current app; clicking anywhere else dismisses it. Adjust sequence length and repeat cycles with sliders, browse the copied queue inline (with the `NEXT` badge; click any item to make it the next paste target), 📌 pin the panel to keep it always on top, or use the Open Main Window / Quit buttons at the bottom.
 - 🎨 **Sleek Modern UI**：Dark theme with glassmorphism styling, live cycle previews, and a glowing `NEXT` indicator badge.
 
 ---
@@ -45,10 +45,11 @@ In daily data entry, spreadsheet transfers, or form filling, we often repeatedly
 | Action | Shortcut / Method |
 | :--- | :--- |
 | **Paste Sequentially** | `Ctrl + Option + V` (macOS) / `Ctrl + Alt + V` (Windows) |
-| **Quick Settings Panel (sliders + queue preview)** | Left-click the menu bar / tray icon, or right-click menu -> "Quick Settings" |
-| **Jump to a Paste Target** | Click any queue item in the quick panel or the main window |
+| **Quick Settings Popover (sliders + queue preview)** | Click the menu bar / tray icon (either button); click again or click outside to dismiss |
+| **Pin the Popover (always on top)** | 📌 button in the popover header; outside clicks no longer dismiss it |
+| **Jump to a Paste Target** | Click any queue item in the popover or the main window |
 | **Reset Index** | Click "Reset to Top" button in the UI |
-| **Show/Hide Window** | Right-click the menu bar / tray icon -> Select "Show Main Window" |
+| **Open Main Window / Quit** | Buttons at the bottom of the popover |
 
 ---
 
@@ -87,6 +88,15 @@ If "Windows protected your PC" appears on first run, click "More info → Run an
 npm install
 npx tauri dev
 ```
+
+### macOS Dev Install (keeps the Accessibility grant)
+The macOS Accessibility grant is tied to the app's code signature; ad-hoc signatures change on every rebuild and silently revoke it. Signing with a fixed local development certificate keeps the grant valid across rebuilds:
+
+```bash
+APPLE_SIGNING_IDENTITY="<your local cert name>" ./scripts/macos-dev-install.sh
+```
+
+The script builds, signs with the stable identity, installs to `/Applications`, and relaunches.
 
 ### Build Distribution Installer (.app / .dmg / .exe / .msi)
 ```bash
