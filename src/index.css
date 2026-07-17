@@ -408,6 +408,25 @@ body {
   color: var(--accent-color);
 }
 
+.quick-footer {
+  display: flex;
+  gap: 8px;
+}
+
+.quick-footer .quick-open-main {
+  flex: 1;
+}
+
+.quick-quit {
+  flex: 0 0 auto !important;
+  padding: 8px 10px;
+}
+
+.quick-quit:hover {
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
+
 .quick-open-main {
   display: flex;
   align-items: center;

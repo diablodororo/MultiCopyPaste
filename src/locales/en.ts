@@ -28,4 +28,5 @@ export const en = {
   loopBadge: (current: number, total: number) => `Loop: ${current}/${total}`,
   quickPanelTitle: 'Quick Settings',
   openMainWindow: 'Open Main Window',
+  quitApp: 'Quit MultiCopyPaste',
 };

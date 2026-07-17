@@ -2,7 +2,7 @@ import { useState, useEffect, type ReactElement } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { SlidersHorizontal, AppWindow, ClipboardList } from 'lucide-react';
+import { SlidersHorizontal, AppWindow, ClipboardList, Power } from 'lucide-react';
 import { type Language, translations } from './locales';
 import { SettingSlider } from './components/SettingSlider';
 
@@ -89,6 +89,10 @@ export default function QuickPanel(): ReactElement {
     void getCurrentWebviewWindow().hide();
   };
 
+  const quitApp = (): void => {
+    invoke('quit_app').catch(console.error);
+  };
+
   const isMac = navigator.platform.toUpperCase().includes('MAC');
 
   return (
@@ -155,10 +159,15 @@ export default function QuickPanel(): ReactElement {
         )}
       </div>
 
-      <button className="quick-open-main" onClick={openMainWindow}>
-        <AppWindow size={14} />
-        {t.openMainWindow}
-      </button>
+      <div className="quick-footer">
+        <button className="quick-open-main" onClick={openMainWindow}>
+          <AppWindow size={14} />
+          {t.openMainWindow}
+        </button>
+        <button className="quick-open-main quick-quit" onClick={quitApp} title={t.quitApp}>
+          <Power size={14} />
+        </button>
+      </div>
     </div>
   );
 }

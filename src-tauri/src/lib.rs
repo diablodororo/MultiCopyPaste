@@ -6,8 +6,7 @@ use clipboard::ClipboardMonitor;
 use models::{ClipboardItem, SequenceState};
 use state::AppState;
 use std::sync::Arc;
-use tauri::menu::{Menu, MenuItem};
-use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
+use tauri::tray::{MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 #[cfg(target_os = "macos")]
@@ -89,22 +88,9 @@ fn manual_paste_next(
     monitor.trigger_paste(state.inner().clone(), app);
 }
 
-struct TrayMenuItems {
-    show: MenuItem<tauri::Wry>,
-    settings: MenuItem<tauri::Wry>,
-    quit: MenuItem<tauri::Wry>,
-}
-
 #[tauri::command]
-fn set_ui_language(lang: String, menu_items: State<'_, TrayMenuItems>) {
-    let (show_text, settings_text, quit_text) = if lang == "en" {
-        ("Show Main Window", "Quick Settings", "Quit")
-    } else {
-        ("顯示主視窗", "快速設定", "離開")
-    };
-    let _ = menu_items.show.set_text(show_text);
-    let _ = menu_items.settings.set_text(settings_text);
-    let _ = menu_items.quit.set_text(quit_text);
+fn quit_app(app: AppHandle) {
+    app.exit(0);
 }
 
 /// Synthetic keyboard events are silently dropped by macOS unless the app has
@@ -239,7 +225,7 @@ pub fn run() {
             delete_sequence_item,
             update_sequence_item,
             manual_paste_next,
-            set_ui_language,
+            quit_app,
             show_main_window
         ])
         .setup(move |app| {
@@ -259,42 +245,14 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             ensure_accessibility_permission();
 
-            // Build System Tray Icon & Menu.
-            // Labels are single-language and follow the UI language via set_ui_language;
-            // sliders and the copied queue live in the quick-settings panel
-            // (left-click on the icon, or the menu's Quick Settings entry).
-            let show_i = MenuItem::with_id(app.handle(), "show", "顯示主視窗", true, None::<&str>)?;
-            let settings_i = MenuItem::with_id(app.handle(), "settings", "快速設定", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app.handle(), "quit", "離開", true, None::<&str>)?;
-            let tray_menu = Menu::with_items(app.handle(), &[&settings_i, &show_i, &quit_i])?;
-            app.manage(TrayMenuItems {
-                show: show_i,
-                settings: settings_i,
-                quit: quit_i,
-            });
-
-            let mut tray_builder = TrayIconBuilder::new()
-                .menu(&tray_menu)
-                .show_menu_on_left_click(false)
-                .on_menu_event(|app: &AppHandle, event| match event.id.as_ref() {
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                    "settings" => {
-                        toggle_quick_panel(app, None);
-                    }
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray: &TrayIcon, event| {
-                    // Left-click toggles the quick-settings panel anchored to the tray icon
+            // Build System Tray Icon — deliberately WITHOUT a native menu.
+            // With a menu attached, macOS shows it on left click regardless of
+            // show_menu_on_left_click(false), hiding the popover. Any click
+            // (left or right) toggles the quick-settings popover instead; the
+            // Show Main Window / Quit actions live inside the popover.
+            let mut tray_builder = TrayIconBuilder::new().on_tray_icon_event(
+                |tray: &TrayIcon, event| {
                     if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
                         button_state: MouseButtonState::Up,
                         position,
                         ..
@@ -302,7 +260,8 @@ pub fn run() {
                     {
                         toggle_quick_panel(tray.app_handle(), Some((position.x, position.y)));
                     }
-                });
+                },
+            );
 
             if let Ok(icon) = tauri::image::Image::from_bytes(include_bytes!("../icons/tray_icon.png")) {
                 tray_builder = tray_builder.icon(icon).icon_as_template(true);

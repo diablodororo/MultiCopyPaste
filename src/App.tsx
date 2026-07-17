@@ -79,11 +79,6 @@ export default function App() {
     localStorage.setItem('app_lang', newLang);
   };
 
-  // Keep the native tray menu labels in the same language as the UI
-  useEffect(() => {
-    invoke('set_ui_language', { lang }).catch(console.error);
-  }, [lang]);
-
   const fetchState = async () => {
     try {
       const res = await invoke<SequenceState>('get_sequence_state');

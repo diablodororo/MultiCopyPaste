@@ -28,4 +28,5 @@ export const zh = {
   loopBadge: (current: number, total: number) => `輪次: ${current}/${total}`,
   quickPanelTitle: '快速設定',
   openMainWindow: '開啟主視窗',
+  quitApp: '離開 MultiCopyPaste',
 };
