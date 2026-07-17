@@ -23,8 +23,10 @@ export const en = {
   saveEdit: 'Save changes',
   cancelEdit: 'Cancel edit',
   jumpToItem: 'Click this index to set as next item to paste',
-  repeatCountTitle: 'Repeat Paste Cycle Count',
-  repeatCountDesc: 'Set how many full loops to paste before automatically clearing queue (default: 1 loop)',
-  repeatTimes: (n: number) => n === 0 ? 'Infinite (No auto-clear)' : `${n} Loop${n > 1 ? 's' : ''} (Clear after ${n} cycle${n > 1 ? 's' : ''})`,
+  repeatCountTitle: 'Repeat Paste Cycles',
+  repeatCountDesc: 'How many full loops to paste before the queue auto-clears (default: 1; far right = infinite)',
+  repeatTimesShort: (n: number) => n === 0 ? '∞ Infinite' : `${n} loop${n > 1 ? 's' : ''}`,
   loopBadge: (current: number, total: number) => `Loop: ${current}/${total}`,
+  quickPanelTitle: 'Quick Settings',
+  openMainWindow: 'Open Main Window',
 };

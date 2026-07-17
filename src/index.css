@@ -176,47 +176,142 @@ body {
   color: var(--text-secondary);
 }
 
-.stepper-group {
+/* ===== Setting slider (shared by main window & quick-settings panel) ===== */
+.setting-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #6366f1 0%,
+    #a855f7 var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.12) var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.12) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent-color);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.5);
+  transition: transform 0.1s ease;
+}
+
+.setting-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.setting-slider:focus-visible {
+  outline: 2px solid var(--border-highlight);
+  outline-offset: 3px;
+}
+
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 240px;
+}
+
+.slider-group .setting-slider {
+  flex: 1;
+}
+
+.slider-value {
+  min-width: 2ch;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider-value-wide {
+  min-width: 92px;
+  font-size: 0.85rem;
+}
+
+/* ===== Quick-settings tray panel ===== */
+.quickset-mode body {
+  background: transparent;
+  overflow: hidden;
+}
+
+.quick-panel {
+  margin: 6px;
+  padding: 14px 16px 16px;
+  background: rgba(15, 20, 34, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.quick-panel-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(15, 23, 42, 0.6);
-  padding: 4px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.stepper-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
-  background: rgba(255, 255, 255, 0.05);
+.quick-setting {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-setting-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.85rem;
   color: var(--text-primary);
-  font-size: 1rem;
+}
+
+.quick-setting-value {
+  color: var(--accent-color);
   font-weight: 600;
-  cursor: pointer;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.quick-open-main {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.stepper-btn:hover:not(:disabled) {
-  background: var(--accent-color);
-}
-
-.stepper-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.stepper-value {
-  min-width: 36px;
-  text-align: center;
-  font-size: 1rem;
-  font-weight: 700;
+.quick-open-main:hover {
   color: var(--text-primary);
+  border-color: var(--border-highlight);
 }
 
 /* Shortcut Badge */

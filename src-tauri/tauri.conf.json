@@ -10,13 +10,29 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
+        "label": "main",
         "title": "MultiCopyPaste",
         "width": 800,
         "height": 600,
         "resizable": true,
         "fullscreen": false
+      },
+      {
+        "label": "quickset",
+        "title": "Quick Settings",
+        "width": 320,
+        "height": 268,
+        "resizable": false,
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": false,
+        "closable": false
       }
     ],
     "security": {

@@ -13,6 +13,11 @@ import {
   X
 } from 'lucide-react';
 import { type Language, translations } from './locales';
+import { SettingSlider } from './components/SettingSlider';
+
+// Slider position 11 (far right) maps to repeat_count 0 = infinite,
+// so dragging right always means "repeat more".
+const INFINITE_SLIDER_POSITION = 11;
 
 interface ClipboardItem {
   id: string;
@@ -64,6 +69,11 @@ export default function App() {
     setLang(newLang);
     localStorage.setItem('app_lang', newLang);
   };
+
+  // Keep the native tray menu labels in the same language as the UI
+  useEffect(() => {
+    invoke('set_ui_language', { lang }).catch(console.error);
+  }, [lang]);
 
   const fetchState = async () => {
     try {
@@ -234,22 +244,15 @@ export default function App() {
             <h3>{t.sequenceLengthTitle}</h3>
             <p>{t.sequenceLengthDesc}</p>
           </div>
-          <div className="stepper-group">
-            <button
-              className="stepper-btn"
-              onClick={() => handleLengthChange(state.target_length - 1)}
-              disabled={state.target_length <= 1}
-            >
-              -
-            </button>
-            <span className="stepper-value">{state.target_length}</span>
-            <button
-              className="stepper-btn"
-              onClick={() => handleLengthChange(state.target_length + 1)}
-              disabled={state.target_length >= 10}
-            >
-              +
-            </button>
+          <div className="slider-group">
+            <SettingSlider
+              min={1}
+              max={12}
+              value={state.target_length}
+              onChange={handleLengthChange}
+              ariaLabel={t.sequenceLengthTitle}
+            />
+            <span className="slider-value">{state.target_length}</span>
           </div>
         </div>
 
@@ -258,22 +261,15 @@ export default function App() {
             <h3>{t.repeatCountTitle}</h3>
             <p>{t.repeatCountDesc}</p>
           </div>
-          <div className="stepper-group" style={{ minWidth: 220, justifyContent: 'flex-end' }}>
-            <button
-              className="stepper-btn"
-              onClick={() => handleRepeatCountChange((state.repeat_count ?? 1) === 0 ? 10 : (state.repeat_count ?? 1) - 1)}
-            >
-              -
-            </button>
-            <span className="stepper-value" style={{ minWidth: 110, fontSize: '0.88rem' }}>
-              {t.repeatTimes(state.repeat_count ?? 1)}
-            </span>
-            <button
-              className="stepper-btn"
-              onClick={() => handleRepeatCountChange(((state.repeat_count ?? 1) + 1) % 11)}
-            >
-              +
-            </button>
+          <div className="slider-group">
+            <SettingSlider
+              min={1}
+              max={INFINITE_SLIDER_POSITION}
+              value={state.repeat_count === 0 ? INFINITE_SLIDER_POSITION : state.repeat_count}
+              onChange={(v) => handleRepeatCountChange(v === INFINITE_SLIDER_POSITION ? 0 : v)}
+              ariaLabel={t.repeatCountTitle}
+            />
+            <span className="slider-value slider-value-wide">{t.repeatTimesShort(state.repeat_count)}</span>
           </div>
         </div>
 

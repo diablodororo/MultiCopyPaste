@@ -24,7 +24,9 @@ export const zh = {
   cancelEdit: '取消編輯',
   jumpToItem: '點擊此序號直接指定為下一個貼上目標',
   repeatCountTitle: '重複貼上循環次數',
-  repeatCountDesc: '設定序列循環貼上幾輪後自動從記憶中清除 (預設 1 輪)',
-  repeatTimes: (n: number) => n === 0 ? '無限循環 (不清空)' : `${n} 輪 (貼完 ${n} 次序列後清空)`,
+  repeatCountDesc: '設定序列循環貼上幾輪後自動從記憶中清除 (預設 1 輪，拉到最右為無限循環)',
+  repeatTimesShort: (n: number) => n === 0 ? '∞ 無限循環' : `${n} 輪`,
   loopBadge: (current: number, total: number) => `輪次: ${current}/${total}`,
+  quickPanelTitle: '快速設定',
+  openMainWindow: '開啟主視窗',
 };
