@@ -29,4 +29,5 @@ export const en = {
   quickPanelTitle: 'Quick Settings',
   openMainWindow: 'Open Main Window',
   quitApp: 'Quit MultiCopyPaste',
+  pinPanel: 'Pin: keep the panel on top; outside clicks won\'t dismiss it',
 };

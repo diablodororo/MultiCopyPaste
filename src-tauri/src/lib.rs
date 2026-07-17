@@ -93,6 +93,21 @@ fn quit_app(app: AppHandle) {
     app.exit(0);
 }
 
+/// Whether the quick-settings popover is pinned: a pinned popover stays on
+/// top and is not dismissed when it loses key/focus status.
+struct QuicksetPinned(std::sync::atomic::AtomicBool);
+
+#[tauri::command]
+fn set_quickset_pinned(pinned: bool, state: State<'_, QuicksetPinned>) {
+    state.0.store(pinned, std::sync::atomic::Ordering::SeqCst);
+}
+
+fn is_quickset_pinned(app: &AppHandle) -> bool {
+    app.state::<QuicksetPinned>()
+        .0
+        .load(std::sync::atomic::Ordering::SeqCst)
+}
+
 /// Synthetic keyboard events are silently dropped by macOS unless the app has
 /// been granted Accessibility permission — and that grant is invalidated
 /// whenever the (ad-hoc) code signature changes, e.g. after every rebuild.
@@ -129,42 +144,51 @@ fn ensure_accessibility_permission() {
     }
 }
 
-/// Positions the quick-settings panel next to the anchor point (tray click),
-/// clamped to the monitor; without an anchor it is centered on screen.
-fn position_quick_panel(panel: &tauri::WebviewWindow, anchor: Option<(f64, f64)>) {
-    if let Some((anchor_x, anchor_y)) = anchor {
-        let size = panel
-            .outer_size()
-            .unwrap_or(tauri::PhysicalSize::new(320, 460));
-        let mut x = anchor_x - size.width as f64 / 2.0;
-        // Menu bar tray sits at the top of the screen (open downward);
-        // a taskbar tray sits at the bottom (open upward).
-        let mut y = if anchor_y < 400.0 {
-            anchor_y + 8.0
-        } else {
-            anchor_y - size.height as f64 - 8.0
-        };
-        if let Ok(Some(monitor)) = panel.current_monitor() {
-            let m_pos = monitor.position();
-            let m_size = monitor.size();
-            let min_x = m_pos.x as f64 + 8.0;
-            let max_x = (m_pos.x as f64 + m_size.width as f64 - size.width as f64 - 8.0).max(min_x);
-            let min_y = m_pos.y as f64 + 8.0;
-            let max_y =
-                (m_pos.y as f64 + m_size.height as f64 - size.height as f64 - 8.0).max(min_y);
-            x = x.clamp(min_x, max_x);
-            y = y.clamp(min_y, max_y);
-        }
-        let _ = panel.set_position(tauri::PhysicalPosition::new(x, y));
-    } else {
+/// Positions the quick-settings panel under the tray icon.
+///
+/// The anchor comes from `AppHandle::cursor_position()` (tao's coordinate
+/// space) rather than the tray event's coordinates: tray-icon's macOS math
+/// mixes logical points with the main display's pixel height, producing
+/// positions on the wrong monitor in multi-screen setups. Cursor position and
+/// `monitor_from_point` share one coordinate space, so the popover opens on
+/// the monitor that was actually clicked.
+fn position_quick_panel(app: &AppHandle, panel: &tauri::WebviewWindow) {
+    let anchor = app.cursor_position().ok();
+    let Some(anchor) = anchor else {
         let _ = panel.center();
+        return;
+    };
+
+    let size = panel
+        .outer_size()
+        .unwrap_or(tauri::PhysicalSize::new(320, 460));
+    let mut x = anchor.x - size.width as f64 / 2.0;
+    let mut y = anchor.y + 8.0;
+
+    if let Ok(Some(monitor)) = app.monitor_from_point(anchor.x, anchor.y) {
+        let m_pos = monitor.position();
+        let m_size = monitor.size();
+        // Menu bar tray sits near the monitor's top edge (open downward);
+        // a taskbar tray sits near the bottom (open upward).
+        let near_top = anchor.y - m_pos.y as f64 <= m_size.height as f64 * 0.25;
+        if !near_top {
+            y = anchor.y - size.height as f64 - 8.0;
+        }
+        let min_x = m_pos.x as f64 + 8.0;
+        let max_x = (m_pos.x as f64 + m_size.width as f64 - size.width as f64 - 8.0).max(min_x);
+        let min_y = m_pos.y as f64 + 8.0;
+        let max_y =
+            (m_pos.y as f64 + m_size.height as f64 - size.height as f64 - 8.0).max(min_y);
+        x = x.clamp(min_x, max_x);
+        y = y.clamp(min_y, max_y);
     }
+    let _ = panel.set_position(tauri::PhysicalPosition::new(x, y));
 }
 
 /// Toggles the quick-settings popover. On macOS the window is backed by a
 /// non-activating NSPanel so it behaves like a real menu bar popover: the
 /// frontmost app keeps focus, and clicking anywhere else dismisses it.
-fn toggle_quick_panel(app: &AppHandle, anchor: Option<(f64, f64)>) {
+fn toggle_quick_panel(app: &AppHandle) {
     let Some(window) = app.get_webview_window("quickset") else {
         return;
     };
@@ -176,7 +200,7 @@ fn toggle_quick_panel(app: &AppHandle, anchor: Option<(f64, f64)>) {
             if panel.is_visible() {
                 panel.order_out(None);
             } else {
-                position_quick_panel(&window, anchor);
+                position_quick_panel(app, &window);
                 panel.show();
             }
             return;
@@ -186,7 +210,7 @@ fn toggle_quick_panel(app: &AppHandle, anchor: Option<(f64, f64)>) {
     if window.is_visible().unwrap_or(false) {
         let _ = window.hide();
     } else {
-        position_quick_panel(&window, anchor);
+        position_quick_panel(app, &window);
         let _ = window.show();
         let _ = window.set_focus();
     }
@@ -207,7 +231,8 @@ pub fn run() {
 
     let builder = tauri::Builder::default()
         .manage(app_state.clone())
-        .manage(monitor.clone());
+        .manage(monitor.clone())
+        .manage(QuicksetPinned(std::sync::atomic::AtomicBool::new(false)));
 
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init());
@@ -226,6 +251,7 @@ pub fn run() {
             update_sequence_item,
             manual_paste_next,
             quit_app,
+            set_quickset_pinned,
             show_main_window
         ])
         .setup(move |app| {
@@ -254,11 +280,10 @@ pub fn run() {
                 |tray: &TrayIcon, event| {
                     if let TrayIconEvent::Click {
                         button_state: MouseButtonState::Up,
-                        position,
                         ..
                     } = event
                     {
-                        toggle_quick_panel(tray.app_handle(), Some((position.x, position.y)));
+                        toggle_quick_panel(tray.app_handle());
                     }
                 },
             );
@@ -294,8 +319,11 @@ pub fn run() {
                     window_did_resign_key
                 });
                 let panel_for_hide = panel.clone();
+                let handle_for_hide = app.handle().clone();
                 delegate.set_listener(Box::new(move |delegate_name: String| {
-                    if delegate_name.as_str() == "window_did_resign_key" {
+                    if delegate_name.as_str() == "window_did_resign_key"
+                        && !is_quickset_pinned(&handle_for_hide)
+                    {
                         panel_for_hide.order_out(None);
                     }
                 }));
@@ -306,9 +334,12 @@ pub fn run() {
             #[cfg(not(target_os = "macos"))]
             if let Some(panel) = app.get_webview_window("quickset") {
                 let panel_handle = panel.clone();
+                let app_handle = app.handle().clone();
                 panel.on_window_event(move |event| {
                     if let tauri::WindowEvent::Focused(false) = event {
-                        let _ = panel_handle.hide();
+                        if !is_quickset_pinned(&app_handle) {
+                            let _ = panel_handle.hide();
+                        }
                     }
                 });
             }

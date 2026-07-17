@@ -289,6 +289,32 @@ body {
   letter-spacing: 0.06em;
 }
 
+.quick-pin {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-pin:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.quick-pin.active {
+  color: #fff;
+  background: var(--accent-color);
+  border-color: var(--border-highlight);
+}
+
 .quick-setting {
   display: flex;
   flex-direction: column;

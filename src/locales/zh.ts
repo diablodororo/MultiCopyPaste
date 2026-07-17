@@ -29,4 +29,5 @@ export const zh = {
   quickPanelTitle: '快速設定',
   openMainWindow: '開啟主視窗',
   quitApp: '離開 MultiCopyPaste',
+  pinPanel: '釘選：保持面板最上層顯示，點擊外部不關閉',
 };

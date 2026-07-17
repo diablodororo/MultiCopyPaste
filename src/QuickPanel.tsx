@@ -2,7 +2,7 @@ import { useState, useEffect, type ReactElement } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { SlidersHorizontal, AppWindow, ClipboardList, Power } from 'lucide-react';
+import { SlidersHorizontal, AppWindow, ClipboardList, Power, Pin } from 'lucide-react';
 import { type Language, translations } from './locales';
 import { SettingSlider } from './components/SettingSlider';
 
@@ -31,6 +31,7 @@ export default function QuickPanel(): ReactElement {
   const [repeatCount, setRepeatCount] = useState<number>(1);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [items, setItems] = useState<QuickPanelItem[]>([]);
+  const [pinned, setPinned] = useState<boolean>(false);
 
   const t = translations[lang];
 
@@ -93,6 +94,12 @@ export default function QuickPanel(): ReactElement {
     invoke('quit_app').catch(console.error);
   };
 
+  const togglePin = (): void => {
+    const next = !pinned;
+    setPinned(next);
+    invoke('set_quickset_pinned', { pinned: next }).catch(console.error);
+  };
+
   const isMac = navigator.platform.toUpperCase().includes('MAC');
 
   return (
@@ -100,6 +107,14 @@ export default function QuickPanel(): ReactElement {
       <div className="quick-panel-header">
         <SlidersHorizontal size={13} />
         <span>{t.quickPanelTitle}</span>
+        <button
+          className={`quick-pin ${pinned ? 'active' : ''}`}
+          onClick={togglePin}
+          title={t.pinPanel}
+          aria-pressed={pinned}
+        >
+          <Pin size={13} />
+        </button>
       </div>
 
       <div className="quick-setting">
